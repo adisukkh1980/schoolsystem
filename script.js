@@ -14,12 +14,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "ใส่ apiKey ของท่าน",
-  authDomain: "ใส่ authDomain ของท่าน",
-  projectId: "ใส่ projectId ของท่าน",
-  storageBucket: "ใส่ storageBucket ของท่าน",
-  messagingSenderId: "ใส่ messagingSenderId ของท่าน",
-  appId: "ใส่ appId ของท่าน"
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "schoolsystem-db",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
 };
 
 const app = initializeApp(firebaseConfig);
