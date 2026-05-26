@@ -1,0 +1,195 @@
+* {
+  box-sizing: border-box;
+  font-family: "Sarabun", Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background: #111827;
+  color: white;
+  padding: 24px;
+}
+
+.sidebar h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.sidebar p {
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+nav {
+  margin-top: 30px;
+  display: grid;
+  gap: 10px;
+}
+
+.menu {
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  background: #374151;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu.active,
+.menu:hover {
+  background: #2563eb;
+}
+
+.main {
+  flex: 1;
+  padding: 28px;
+}
+
+.header {
+  background: white;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.header p {
+  color: #6b7280;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #2563eb;
+  color: white;
+  padding: 24px;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.card h3 {
+  margin: 0;
+}
+
+.card p {
+  font-size: 40px;
+  font-weight: bold;
+  margin: 10px 0 0;
+}
+
+.panel {
+  background: white;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.form-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button.secondary {
+  background: #6b7280;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: #111827;
+  color: white;
+}
+
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.edit-btn {
+  background: #f59e0b;
+  margin-right: 6px;
+}
+
+.delete-btn {
+  background: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .app {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .main {
+    padding: 14px;
+  }
+}
