@@ -48,55 +48,73 @@
       overflow-x: hidden;
     }
 
-    /* ========== SIDEBAR LOGIN PANEL ========== */
-    .sidebar-login-panel {
-      background: rgba(255,255,255,0.08);
-      border-radius: 12px; margin: 10px 12px 0;
-      padding: 16px 14px; border: 1px solid rgba(255,255,255,0.15);
-    }
-    .sidebar-login-panel .login-title {
-      color: #fff; font-size: 13px; font-weight: 600; margin-bottom: 12px;
-      display: flex; align-items: center; gap: 7px;
-    }
-    .sidebar-login-panel .login-title i { color: #29B6F6; font-size: 14px; }
-    .sidebar-login-panel label {
-      display: block; font-size: 11px; font-weight: 500;
-      color: rgba(255,255,255,0.6); margin-bottom: 5px; margin-top: 10px;
-    }
-    .sidebar-login-panel label:first-of-type { margin-top: 0; }
-    .sidebar-login-panel input {
-      width: 100%; padding: 9px 11px; border: 1.5px solid rgba(255,255,255,0.2);
-      border-radius: 8px; font-family: 'Kanit', sans-serif; font-size: 13px;
-      color: #fff; background: rgba(255,255,255,0.12); outline: none;
+    /* ========== SIDEBAR USER FOOTER (logged in) ========== */
+    .sidebar-user-footer {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; cursor: pointer;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.15);
       transition: var(--transition);
     }
-    .sidebar-login-panel input::placeholder { color: rgba(255,255,255,0.35); }
-    .sidebar-login-panel input:focus { border-color: #29B6F6; background: rgba(255,255,255,0.18); }
-    .btn-login-sidebar {
-      width: 100%; padding: 10px; margin-top: 12px;
-      background: linear-gradient(135deg, #29B6F6, #0288D1);
-      color: #fff; border: none; border-radius: 8px;
-      font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 600;
+    .sidebar-user-footer:hover { background: rgba(0,0,0,0.25); }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-weight: 700; color: #fff; font-size: 15px;
+    }
+    .user-name { color: #fff; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; }
+    .user-role { color: rgba(255,255,255,0.55); font-size: 11px; }
+    .sidebar.collapsed .sidebar-user-footer span,
+    .sidebar.collapsed .sidebar-user-footer .user-name,
+    .sidebar.collapsed .sidebar-user-footer .user-role { display: none; }
+
+    /* ========== RIGHT LOGIN PAGE ========== */
+    .login-page-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 64px); padding: 40px 20px;
+    }
+    .login-page-card {
+      background: #fff; border-radius: 20px; padding: 48px 44px;
+      width: 440px; max-width: 100%;
+      box-shadow: var(--shadow-md); border: 1px solid var(--border);
+    }
+    .login-page-logo {
+      text-align: center; margin-bottom: 32px;
+    }
+    .login-page-logo .lp-icon {
+      width: 72px; height: 72px; border-radius: 18px;
+      background: linear-gradient(135deg, #1565C0, #0288D1);
+      display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px;
+    }
+    .login-page-logo .lp-icon i { font-size: 34px; color: #fff; }
+    .login-page-logo h2 { font-size: 20px; font-weight: 700; color: var(--primary); }
+    .login-page-logo p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .login-page-card label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--text-secondary); margin-bottom: 7px; margin-top: 18px;
+    }
+    .login-page-card label:first-of-type { margin-top: 0; }
+    .login-page-card input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-family: 'Kanit', sans-serif; font-size: 15px;
+      color: var(--text); outline: none; transition: var(--transition);
+    }
+    .login-page-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(21,101,192,0.10); }
+    .btn-login-main {
+      width: 100%; padding: 13px; margin-top: 24px;
+      background: linear-gradient(135deg, #1565C0, #0288D1);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 600;
       cursor: pointer; transition: var(--transition);
+      box-shadow: 0 4px 16px rgba(21,101,192,0.25);
     }
-    .btn-login-sidebar:hover { opacity: 0.9; transform: translateY(-1px); }
-    .sidebar-login-hint {
-      margin-top: 10px; font-size: 11px;
-      color: rgba(255,255,255,0.45); line-height: 1.8;
+    .btn-login-main:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(21,101,192,0.35); }
+    .login-hint-box {
+      background: var(--primary-50); border-radius: 10px; padding: 14px 16px;
+      margin-top: 20px; font-size: 13px; color: var(--primary-dark); line-height: 2;
     }
-    .sidebar-user-panel {
-      background: rgba(255,255,255,0.08);
-      border-radius: 12px; margin: 10px 12px 0;
-      padding: 12px 14px; border: 1px solid rgba(255,255,255,0.15);
-      display: none;
-    }
-    .sidebar-user-panel .role-badge {
-      display: inline-block; padding: 2px 8px; border-radius: 20px;
-      font-size: 10px; font-weight: 600; background: #29B6F6; color: #fff; margin-top: 2px;
-    }
-    .sidebar.collapsed .sidebar-login-panel,
-    .sidebar.collapsed .sidebar-user-panel { display: none; }
-    .sidebar.collapsed .sidebar-footer-icon { display: flex !important; }
+    .login-hint-box b { display: block; margin-bottom: 2px; }
 
     /* ========== LAYOUT ========== */
     #app { display: flex; min-height: 100vh; }
@@ -135,19 +153,6 @@
     }
     .nav-item i { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
     .nav-item span { overflow: hidden; }
-    .sidebar-footer {
-      padding: 16px; border-top: 1px solid rgba(255,255,255,0.1);
-    }
-    .user-info {
-      display: flex; align-items: center; gap: 10px; padding: 10px 4px; cursor: pointer;
-    }
-    .avatar {
-      width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.25);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-      font-weight: 600; color: #fff; font-size: 15px;
-    }
-    .user-name { color: #fff; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; }
-    .user-role { color: rgba(255,255,255,0.6); font-size: 11px; }
 
     /* ========== MAIN CONTENT ========== */
     .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; transition: margin-left var(--transition); min-height: 100vh; }
@@ -355,33 +360,13 @@
       </div>
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
-    <div class="sidebar-footer">
-      <!-- LOGIN PANEL (shown when not logged in) -->
-      <div id="sidebarLoginPanel" class="sidebar-login-panel">
-        <div class="login-title"><i class="fas fa-lock"></i> เข้าสู่ระบบจัดการ</div>
-        <label>ชื่อผู้ใช้</label>
-        <input type="text" id="loginUser" placeholder="username" />
-        <label>รหัสผ่าน</label>
-        <input type="password" id="loginPass" placeholder="password" onkeydown="if(event.key==='Enter')doLogin()" />
-        <button class="btn-login-sidebar" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
-        <div class="sidebar-login-hint">
-          admin / admin123<br>
-          director / dir123<br>
-          teacher / tch123
+    <div class="sidebar-footer" id="sidebarFooter" style="display:none">
+      <div class="sidebar-user-footer" onclick="doLogout()" title="คลิกเพื่อออกจากระบบ">
+        <div class="avatar" id="userAvatar">A</div>
+        <div>
+          <div class="user-name" id="userName">ผู้ดูแลระบบ</div>
+          <div class="user-role" id="userRoleLabel">Admin</div>
         </div>
-      </div>
-      <!-- USER PANEL (shown when logged in) -->
-      <div id="sidebarUserPanel" class="sidebar-user-panel">
-        <div class="user-info" style="padding:0;margin-bottom:10px">
-          <div class="avatar" id="userAvatar">A</div>
-          <div>
-            <div class="user-name" id="userName">ผู้ดูแลระบบ</div>
-            <span class="role-badge" id="userRoleLabel">Admin</span>
-          </div>
-        </div>
-        <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.8)" onclick="doLogout()">
-          <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
-        </button>
       </div>
     </div>
   </aside>
@@ -398,8 +383,9 @@
         <input type="text" placeholder="ค้นหาระบบงาน..." id="globalSearch" oninput="handleGlobalSearch(this.value)" />
       </div>
       <div class="topbar-right">
-        <div id="topbarUserInfo" style="display:none;align-items:center;gap:8px">
+        <div id="topbarUserInfo" style="display:none;align-items:center;gap:10px">
           <span style="font-size:13px;color:var(--text-secondary)" id="topbarUserName"></span>
+          <button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
         </div>
       </div>
     </header>
@@ -483,7 +469,31 @@ function doLogin() {
   addLog(found.name, 'เข้าสู่ระบบ', '');
   updateAuthUI();
   buildSidebar();
-  navigate('dashboard');
+  navigate(found.role === 'admin' ? 'manage-systems' : 'dashboard');
+}
+
+function renderLoginPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="login-page-wrap">
+      <div class="login-page-card">
+        <div class="login-page-logo">
+          <div class="lp-icon"><i class="fas fa-user-shield"></i></div>
+          <h2>เข้าสู่ระบบจัดการ</h2>
+          <p>${DB.settings.systemName}</p>
+        </div>
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" />
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()" />
+        <button class="btn-login-main" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
+        <div class="login-hint-box">
+          <b><i class="fas fa-info-circle"></i> บัญชีทดสอบ</b>
+          admin / admin123 → ผู้ดูแลระบบ<br>
+          director / dir123 → ผู้อำนวยการ<br>
+          teacher / tch123 → ครู
+        </div>
+      </div>
+    </div>`;
 }
 
 function doLogout() {
@@ -495,8 +505,6 @@ function doLogout() {
     if (r.isConfirmed) {
       addLog(currentUser.name, 'ออกจากระบบ', '');
       currentUser = null;
-      document.getElementById('loginUser').value = '';
-      document.getElementById('loginPass').value = '';
       updateAuthUI();
       buildSidebar();
       navigate('dashboard');
@@ -506,8 +514,10 @@ function doLogout() {
 
 function updateAuthUI() {
   const loggedIn = !!currentUser;
-  document.getElementById('sidebarLoginPanel').style.display = loggedIn ? 'none' : '';
-  document.getElementById('sidebarUserPanel').style.display = loggedIn ? '' : 'none';
+  // sidebar footer (user info) - only shown when logged in
+  const footer = document.getElementById('sidebarFooter');
+  footer.style.display = loggedIn ? '' : 'none';
+  // topbar user info + logout
   const topInfo = document.getElementById('topbarUserInfo');
   if (loggedIn) {
     document.getElementById('userAvatar').textContent = currentUser.name.charAt(0);
@@ -548,13 +558,22 @@ function buildSidebar() {
       <i class="fas ${d.icon}"></i><span>${d.name}</span></div>`;
   });
 
+  // จัดการระบบ section
+  html += `<div class="nav-section">จัดการระบบ</div>`;
   if (role === 'admin') {
-    html += `<div class="nav-section">จัดการระบบ</div>
+    html += `
       <div class="nav-item" data-page="manage-systems" onclick="navigate('manage-systems')"><i class="fas fa-cog"></i><span>จัดการระบบ</span></div>
       <div class="nav-item" data-page="manage-depts" onclick="navigate('manage-depts')"><i class="fas fa-layer-group"></i><span>จัดการกลุ่มงาน</span></div>
       <div class="nav-item" data-page="manage-users" onclick="navigate('manage-users')"><i class="fas fa-user-cog"></i><span>จัดการผู้ใช้</span></div>
       <div class="nav-item" data-page="settings" onclick="navigate('settings')"><i class="fas fa-sliders-h"></i><span>ตั้งค่าระบบ</span></div>
       <div class="nav-item" data-page="logs" onclick="navigate('logs')"><i class="fas fa-history"></i><span>บันทึกกิจกรรม</span></div>`;
+  } else if (role === 'director') {
+    html += `
+      <div class="nav-item" data-page="manage-systems" onclick="navigate('manage-systems')"><i class="fas fa-cog"></i><span>จัดการระบบ</span></div>`;
+  } else {
+    // guest / teacher - show login entry
+    html += `
+      <div class="nav-item" data-page="admin-login" onclick="navigate('admin-login')"><i class="fas fa-sign-in-alt"></i><span>เข้าสู่ระบบจัดการ</span></div>`;
   }
 
   document.getElementById('sidebarNav').innerHTML = html;
@@ -585,12 +604,13 @@ function navigate(page) {
 
   if (page === 'dashboard') renderDashboard();
   else if (page.startsWith('dept-')) renderDept(page.replace('dept-', ''));
-  else if (page === 'manage-systems' && currentUser?.role === 'admin') renderManageSystems();
+  else if (page === 'admin-login') renderLoginPage();
+  else if (page === 'manage-systems' && currentUser) renderManageSystems();
   else if (page === 'manage-depts' && currentUser?.role === 'admin') renderManageDepts();
   else if (page === 'manage-users' && currentUser?.role === 'admin') renderManageUsers();
   else if (page === 'settings' && currentUser?.role === 'admin') renderSettings();
   else if (page === 'logs' && currentUser?.role === 'admin') renderLogs();
-  else { document.getElementById('pageContent').innerHTML = '<p style="padding:40px;text-align:center;color:var(--danger)"><i class="fas fa-lock" style="font-size:40px;display:block;margin-bottom:12px"></i>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>'; }
+  else { navigate('admin-login'); }
 }
 
 // ============================================================
