@@ -3,93 +3,1842 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบบริหารจัดการโรงเรียนแบบรวมศูนย์</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Firebase SDK แบบ compat: ใช้กับ onclick เดิมได้ โดยไม่ต้องรื้อ UI -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1565C0;
+      --primary-dark: #0D47A1;
+      --primary-light: #1E88E5;
+      --primary-50: #E3F2FD;
+      --primary-100: #BBDEFB;
+      --accent: #0288D1;
+      --accent-light: #29B6F6;
+      --sidebar-bg: #0D47A1;
+      --sidebar-active: #1565C0;
+      --sidebar-text: rgba(255,255,255,0.85);
+      --sidebar-width: 260px;
+      --sidebar-collapsed: 70px;
+      --bg: #F0F4F8;
+      --card-bg: #FFFFFF;
+      --text: #1A237E;
+      --text-secondary: #546E7A;
+      --text-muted: #90A4AE;
+      --border: #E0E8F0;
+      --success: #2E7D32;
+      --success-bg: #E8F5E9;
+      --warning: #E65100;
+      --warning-bg: #FFF3E0;
+      --danger: #C62828;
+      --danger-bg: #FFEBEE;
+      --shadow: 0 2px 12px rgba(21,101,192,0.10);
+      --shadow-md: 0 4px 24px rgba(21,101,192,0.15);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-  <title>ระบบบริหารจัดการโรงเรียน</title>
+    /* ========== SIDEBAR USER FOOTER (logged in) ========== */
+    .sidebar-user-footer {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; cursor: pointer;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.15);
+      transition: var(--transition);
+    }
+    .sidebar-user-footer:hover { background: rgba(0,0,0,0.25); }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-weight: 700; color: #fff; font-size: 15px;
+    }
+    .user-name { color: #fff; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; }
+    .user-role { color: rgba(255,255,255,0.55); font-size: 11px; }
+    .sidebar.collapsed .sidebar-user-footer span,
+    .sidebar.collapsed .sidebar-user-footer .user-name,
+    .sidebar.collapsed .sidebar-user-footer .user-role { display: none; }
 
-  <link rel="stylesheet" href="style.css" />
+    /* ========== RIGHT LOGIN PAGE ========== */
+    .login-page-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 64px); padding: 40px 20px;
+    }
+    .login-page-card {
+      background: #fff; border-radius: 20px; padding: 48px 44px;
+      width: 440px; max-width: 100%;
+      box-shadow: var(--shadow-md); border: 1px solid var(--border);
+    }
+    .login-page-logo {
+      text-align: center; margin-bottom: 32px;
+    }
+    .login-page-logo .lp-icon {
+      width: 72px; height: 72px; border-radius: 18px;
+      background: linear-gradient(135deg, #1565C0, #0288D1);
+      display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px;
+    }
+    .login-page-logo .lp-icon i { font-size: 34px; color: #fff; }
+    .login-page-logo h2 { font-size: 20px; font-weight: 700; color: var(--primary); }
+    .login-page-logo p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .login-page-card label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--text-secondary); margin-bottom: 7px; margin-top: 18px;
+    }
+    .login-page-card label:first-of-type { margin-top: 0; }
+    .login-page-card input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-family: 'Kanit', sans-serif; font-size: 15px;
+      color: var(--text); outline: none; transition: var(--transition);
+    }
+    .login-page-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(21,101,192,0.10); }
+    .btn-login-main {
+      width: 100%; padding: 13px; margin-top: 24px;
+      background: linear-gradient(135deg, #1565C0, #0288D1);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 4px 16px rgba(21,101,192,0.25);
+    }
+    .btn-login-main:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(21,101,192,0.35); }
+    .login-hint-box {
+      background: var(--primary-50); border-radius: 10px; padding: 14px 16px;
+      margin-top: 20px; font-size: 13px; color: var(--primary-dark); line-height: 2;
+    }
+    .login-hint-box b { display: block; margin-bottom: 2px; }
+
+    /* ========== LAYOUT ========== */
+    #app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-width); min-height: 100vh;
+      background: var(--sidebar-bg); position: fixed; left: 0; top: 0; bottom: 0;
+      display: flex; flex-direction: column; z-index: 100;
+      transition: width var(--transition);
+      overflow: hidden;
+    }
+    .sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+    /* Header */
+    .sidebar-header {
+      padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1); min-height: 64px; flex-shrink: 0;
+    }
+    .sidebar-brand { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+    .sidebar-logo {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;
+    }
+    .sidebar-logo i { font-size: 19px; color: #fff; }
+    .sidebar-title { color: #fff; font-size: 14px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity var(--transition); }
+    .sidebar-title span { display: block; font-size: 11px; font-weight: 400; opacity: 0.65; }
+    .sidebar-toggle-btn {
+      width: 32px; height: 32px; border-radius: 8px; border: none; flex-shrink: 0;
+      background: rgba(255,255,255,0.12); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.8); transition: var(--transition);
+    }
+    .sidebar-toggle-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .sidebar-toggle-btn i { font-size: 14px; transition: transform var(--transition); }
+    .sidebar.collapsed .sidebar-toggle-btn i { transform: rotate(180deg); }
+    .sidebar.collapsed .sidebar-title { opacity: 0; width: 0; }
+
+    /* Nav */
+    .sidebar-nav { flex: 1; padding: 10px 0; overflow-y: auto; overflow-x: hidden; }
+    .nav-section {
+      padding: 10px 16px 4px; font-size: 10px; color: rgba(255,255,255,0.4);
+      text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .nav-section { opacity: 0; height: 0; padding: 0; overflow: hidden; }
+    .nav-item {
+      display: flex; align-items: center; gap: 0;
+      padding: 0 14px; height: 46px; cursor: pointer; color: var(--sidebar-text);
+      transition: var(--transition); position: relative; white-space: nowrap;
+      font-size: 14px; font-weight: 400; overflow: hidden;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 500; }
+    .nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 60%; background: #29B6F6; border-radius: 0 4px 4px 0;
+    }
+    .nav-item .nav-icon {
+      font-size: 18px; width: 42px; min-width: 42px; text-align: center; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-item .nav-label { overflow: hidden; transition: opacity var(--transition), max-width var(--transition); max-width: 200px; }
+    .sidebar.collapsed .nav-item .nav-label { opacity: 0; max-width: 0; }
+
+    /* Tooltip on collapsed */
+    .sidebar.collapsed .nav-item { position: relative; }
+    .sidebar.collapsed .nav-item:hover::after {
+      content: attr(data-tooltip);
+      position: absolute; left: calc(var(--sidebar-collapsed) + 8px); top: 50%;
+      transform: translateY(-50%);
+      background: #1A237E; color: #fff; padding: 6px 12px; border-radius: 8px;
+      font-size: 13px; white-space: nowrap; z-index: 999;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      pointer-events: none;
+    }
+
+    /* Footer user */
+    .sidebar-user-footer {
+      display: flex; align-items: center; gap: 0;
+      padding: 0 14px; height: 58px; cursor: pointer; flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.12); transition: var(--transition); overflow: hidden;
+    }
+    .sidebar-user-footer:hover { background: rgba(0,0,0,0.22); }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%; min-width: 36px;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #fff; font-size: 14px;
+    }
+    .user-text { margin-left: 10px; overflow: hidden; transition: opacity var(--transition), max-width var(--transition); max-width: 180px; }
+    .sidebar.collapsed .user-text { opacity: 0; max-width: 0; margin-left: 0; }
+    .user-name { color: #fff; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; }
+    .user-role { color: rgba(255,255,255,0.55); font-size: 11px; }
+    .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; transition: margin-left var(--transition); min-height: 100vh; }
+    .sidebar.collapsed ~ .main { margin-left: var(--sidebar-collapsed); }
+    .topbar {
+      background: #fff; padding: 0 28px; height: 64px; display: flex; align-items: center;
+      justify-content: space-between; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 1px 4px rgba(21,101,192,0.06);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .toggle-btn {
+      width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+      background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); transition: var(--transition);
+    }
+    .toggle-btn:hover { background: var(--primary-50); color: var(--primary); }
+    .page-title { font-size: 18px; font-weight: 600; color: var(--text); }
+    .search-box {
+      display: flex; align-items: center; gap: 8px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px;
+      min-width: 240px;
+    }
+    .search-box i { color: var(--text-muted); font-size: 15px; }
+    .search-box input { border: none; background: none; outline: none; font-family: 'Kanit', sans-serif; font-size: 14px; width: 100%; color: var(--text); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .page-content { padding: 28px; flex: 1; }
+
+    /* ========== CARDS / DASHBOARD ========== */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; margin-bottom: 28px; }
+    .stat-card {
+      background: #fff; border-radius: var(--radius); padding: 22px 20px;
+      display: flex; align-items: center; gap: 16px; cursor: default;
+      box-shadow: var(--shadow); transition: var(--transition);
+      border: 1px solid transparent;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary-100); }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stat-icon i { font-size: 24px; }
+    .stat-label { font-size: 13px; color: var(--text-secondary); }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .section-title { font-size: 17px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 10px; }
+    .section-title i { color: var(--primary); }
+
+    .systems-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; }
+    .system-card {
+      background: #fff; border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow); border: 1px solid var(--border); transition: var(--transition);
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .system-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-100); }
+    .sys-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .sys-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sys-icon i { font-size: 22px; color: #fff; }
+    .sys-info { flex: 1; }
+    .sys-name { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .sys-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+    .sys-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    }
+    .badge-active { background: var(--success-bg); color: var(--success); }
+    .badge-inactive { background: #ECEFF1; color: #607D8B; }
+    .badge-dept { padding: 3px 9px; font-size: 11px; }
+    .btn {
+      padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+      font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 6px; transition: var(--transition);
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-outline { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-50); }
+    .btn-danger { background: none; border: 1px solid #FFCDD2; color: var(--danger); }
+    .btn-danger:hover { background: var(--danger-bg); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: #1B5E20; }
+    .btn-icon { padding: 7px; border-radius: 8px; width: 32px; height: 32px; justify-content: center; }
+
+    /* ========== TABLE ========== */
+    .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
+    .card-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .card-body { padding: 0; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { background: var(--bg); padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .data-table td { padding: 13px 16px; font-size: 14px; border-bottom: 1px solid #F5F7FA; color: var(--text); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--primary-50); }
+    .actions { display: flex; gap: 6px; }
+
+    /* ========== MODAL ========== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(10,30,80,0.45);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; pointer-events: none; transition: var(--transition);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #fff; border-radius: 18px; width: 560px; max-width: 100%;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(13,71,161,0.25);
+      transform: scale(0.95); transition: var(--transition);
+    }
+    .modal-overlay.open .modal { transform: scale(1); }
+    .modal-header { padding: 22px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .modal-body { padding: 20px 24px; }
+    .modal-footer { padding: 0 24px 22px; display: flex; justify-content: flex-end; gap: 10px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 7px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 9px; font-family: 'Kanit', sans-serif; font-size: 14px;
+      color: var(--text); outline: none; transition: var(--transition); background: #fff;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(21,101,192,0.10); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ========== TABS ========== */
+    .tabs { display: flex; gap: 4px; margin-bottom: 22px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 9px 18px; border-radius: 9px; border: 1px solid var(--border);
+      background: #fff; cursor: pointer; font-family: 'Kanit', sans-serif; font-size: 14px;
+      font-weight: 400; color: var(--text-secondary); transition: var(--transition);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .tab-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-50); }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 500; }
+
+    /* ========== FILTER BAR ========== */
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-bar input, .filter-bar select {
+      padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-family: 'Kanit', sans-serif; font-size: 14px; color: var(--text);
+      background: #fff; outline: none; transition: var(--transition);
+    }
+    .filter-bar input:focus, .filter-bar select:focus { border-color: var(--primary); }
+    .filter-bar input { flex: 1; min-width: 200px; }
+
+    /* ========== TOGGLE ========== */
+    .toggle { position: relative; display: inline-block; width: 42px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; border-radius: 24px;
+      background: #CFD8DC; cursor: pointer; transition: var(--transition);
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; left: 3px; top: 3px; transition: var(--transition);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* ========== SETTINGS ========== */
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 22px; }
+    .settings-card { background: #fff; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .settings-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 18px; display: flex; align-items: center; gap: 9px; color: var(--text); }
+    .settings-card h3 i { color: var(--primary); }
+
+    /* ========== RESPONSIVE ========== */
+    .mobile-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99;
+    }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform var(--transition); width: var(--sidebar-width) !important; }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .mobile-overlay.show { display: block; }
+      .main { margin-left: 0 !important; }
+      .page-content { padding: 16px; }
+      .search-box { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .systems-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    /* dept color dots */
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    /* ========== CHARTS ========== */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px; margin-top: 4px;
+    }
+    @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: #fff; border-radius: var(--radius); padding: 22px 24px;
+      box-shadow: var(--shadow); border: 1px solid var(--border);
+    }
+    .chart-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px; flex-wrap: wrap; gap: 8px;
+    }
+    .chart-wrap { position: relative; height: 280px; }
+    .chart-wrap-pie { height: 220px; margin-bottom: 16px; }
+    .pie-legend { display: flex; flex-direction: column; gap: 8px; }
+    .pie-legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--text);
+    }
+    .pie-legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .pie-legend-val { margin-left: auto; font-weight: 600; color: var(--text-secondary); font-size: 12px; }
+
+    /* ========== SIDEBAR STATS PANEL ========== */
+    .sidebar-stats {
+      flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+      padding: 10px 14px 12px;
+      transition: var(--transition);
+    }
+    .sidebar-stats-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+      color: rgba(255,255,255,0.38); margin-bottom: 8px; white-space: nowrap;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .sidebar-stats-title { opacity: 0; height: 0; margin: 0; overflow: hidden; }
+    .stat-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+      transition: opacity var(--transition);
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .sidebar.collapsed .stat-row { opacity: 0; height: 0; padding: 0; overflow: hidden; border: none; }
+    .stat-row-icon {
+      width: 22px; min-width: 22px; text-align: center; flex-shrink: 0;
+      font-size: 11px; color: rgba(255,255,255,0.55);
+    }
+    .stat-row-label { font-size: 11px; color: rgba(255,255,255,0.65); white-space: nowrap; flex: 1; overflow: hidden; }
+    .stat-row-value { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; }
+    .stat-row-unit { font-size: 10px; color: rgba(255,255,255,0.5); margin-left: 2px; }
+
+    /* Online blinking row */
+    .stat-row-online { border-bottom: 1px solid rgba(255,255,255,0.12) !important; margin-bottom: 3px; padding-bottom: 8px !important; }
+    .online-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #4CAF50; flex-shrink: 0;
+      box-shadow: 0 0 0 0 rgba(76,175,80,0.6);
+      animation: pulse-online 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse-online {
+      0%   { box-shadow: 0 0 0 0 rgba(76,175,80,0.7); transform: scale(1); }
+      50%  { box-shadow: 0 0 0 6px rgba(76,175,80,0); transform: scale(1.15); }
+      100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); transform: scale(1); }
+    }
+    .online-label { font-size: 11px; color: #A5D6A7; font-weight: 500; white-space: nowrap; flex: 1; }
+    .online-value { font-size: 13px; font-weight: 700; color: #69F0AE; }
+
+    /* collapsed: show icon only */
+    .sidebar.collapsed .sidebar-stats {
+      padding: 10px 0;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .sidebar-stats-collapsed-dot {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-stats-collapsed-dot {
+      display: flex; justify-content: center; align-items: center; width: 100%;
+    }
+  </style>
 </head>
 <body>
 
-  <div class="app">
-    <aside class="sidebar">
-      <h2>School System</h2>
-      <p>ระบบบริหารจัดการโรงเรียน</p>
+<!-- MOBILE OVERLAY -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
 
-      <nav>
-        <button class="menu active">Dashboard</button>
-        <button class="menu">จัดการข้อมูลนักเรียน</button>
-      </nav>
-    </aside>
+<!-- APP -->
+<div id="app">
 
-    <main class="main">
-      <section class="header">
-        <div>
-          <h1>ระบบจัดการข้อมูลนักเรียน</h1>
-          <p>เชื่อมต่อฐานข้อมูล Firebase Firestore</p>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo"><i class="fas fa-school"></i></div>
+        <div class="sidebar-title" id="sidebarTitle">
+          ระบบรวมศูนย์
+          <span id="sidebarSubtitle">โรงเรียนบ้านโสน</span>
         </div>
-      </section>
-
-      <section class="cards">
-        <div class="card">
-          <h3>จำนวนนักเรียน</h3>
-          <p id="totalStudents">0</p>
+      </div>
+      <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="ย่อ/ขยายเมนู">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarFooter" style="display:none">
+      <div class="sidebar-user-footer" onclick="doLogout()" title="คลิกเพื่อออกจากระบบ">
+        <div class="avatar" id="userAvatar">A</div>
+        <div class="user-text">
+          <div class="user-name" id="userName">ผู้ดูแลระบบ</div>
+          <div class="user-role" id="userRoleLabel">Admin</div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <section class="panel">
-        <h2>เพิ่ม / แก้ไขข้อมูลนักเรียน</h2>
+    <!-- SIDEBAR STATS PANEL -->
+    <div class="sidebar-stats" id="sidebarStats">
+      <!-- collapsed: dot only -->
+      <div class="sidebar-stats-collapsed-dot">
+        <div class="online-dot" title="กำลังใช้งาน"></div>
+      </div>
 
-        <form id="studentForm">
-          <input type="hidden" id="docId" />
+      <div class="sidebar-stats-title">สถิติการใช้งาน</div>
 
-          <div class="form-grid">
-            <div>
-              <label>รหัสนักเรียน</label>
-              <input type="text" id="studentCode" placeholder="เช่น 001" required />
-            </div>
+      <!-- Online now -->
+      <div class="stat-row stat-row-online" style="display:flex;align-items:center;gap:8px;padding:6px 0 8px">
+        <div class="online-dot"></div>
+        <span class="online-label">กำลังเข้าใช้งาน</span>
+        <span class="online-value" id="statOnline">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
 
-            <div>
-              <label>ชื่อ - สกุล</label>
-              <input type="text" id="studentName" placeholder="เช่น เด็กชายสมชาย ใจดี" required />
-            </div>
+      <!-- Today -->
+      <div class="stat-row">
+        <div class="stat-row-icon"><i class="fas fa-calendar-day"></i></div>
+        <span class="stat-row-label">เข้าใช้วันนี้</span>
+        <span class="stat-row-value" id="statToday">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
 
-            <div>
-              <label>ชั้นเรียน</label>
-              <input type="text" id="studentClass" placeholder="เช่น ป.4" required />
-            </div>
-          </div>
+      <!-- This month -->
+      <div class="stat-row">
+        <div class="stat-row-icon"><i class="fas fa-calendar-week"></i></div>
+        <span class="stat-row-label">เข้าใช้เดือนนี้</span>
+        <span class="stat-row-value" id="statMonth">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
 
-          <div class="form-actions">
-            <button type="submit" id="saveBtn">บันทึกข้อมูล</button>
-            <button type="button" id="cancelBtn" class="secondary" style="display:none;">ยกเลิก</button>
-          </div>
-        </form>
-      </section>
+      <!-- This year -->
+      <div class="stat-row">
+        <div class="stat-row-icon"><i class="fas fa-calendar-alt"></i></div>
+        <span class="stat-row-label">เข้าใช้ปีนี้</span>
+        <span class="stat-row-value" id="statYear">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
+    </div>
+  </aside>
 
-      <section class="panel">
-        <h2>รายการข้อมูลนักเรียน</h2>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>รหัส</th>
-                <th>ชื่อ - สกุล</th>
-                <th>ชั้น</th>
-                <th>จัดการ</th>
-              </tr>
-            </thead>
-            <tbody id="studentTableBody">
-              <tr>
-                <td colspan="4">กำลังโหลดข้อมูล...</td>
-              </tr>
-            </tbody>
-          </table>
+  <!-- MAIN -->
+  <div class="main" id="mainContent">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="page-title" id="pageTitle">Dashboard</div>
+      </div>
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="ค้นหาระบบงาน..." id="globalSearch" oninput="handleGlobalSearch(this.value)" />
+      </div>
+      <div class="topbar-right">
+        <div id="topbarUserInfo" style="display:none;align-items:center;gap:10px">
+          <span style="font-size:13px;color:var(--text-secondary)" id="topbarUserName"></span>
+          <button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
         </div>
-      </section>
-    </main>
+      </div>
+    </header>
+    <div class="page-content" id="pageContent"></div>
   </div>
+</div>
 
-  <script type="module" src="script.js"></script>
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">หัวข้อ</div>
+      <button class="btn btn-icon btn-outline" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA STORE
+// ============================================================
+let DB = {
+  settings: {
+    schoolName: 'โรงเรียนบ้านโสน',
+    systemName: 'ระบบบริหารจัดการโรงเรียนแบบรวมศูนย์',
+    director: 'นายธนวรัท  คำเสียงว',
+    year: '2569',
+    primaryColor: '#1565C0',
+    footer: '© 2569 โรงเรียนบ้านโสน',
+    maintenance: false
+  },
+  users: [
+    { id:1, name:'ผู้ดูแลระบบ', username:'admin', password:'admin123', role:'admin', position:'ผู้ดูแลระบบ', depts:[], status:true },
+    { id:2, name:'นายธนวรัท  คำเสียง', username:'director', password:'dir123', role:'director', position:'ผู้อำนวยการโรงเรียน', depts:[], status:true },
+    { id:3, name:'นายวินัย คงสุขา', username:'teacher', password:'tch123', role:'teacher', position:'ครูวิชาการ', depts:['academic'], status:true }
+  ],
+  departments: [
+    { id:'academic', name:'งานวิชาการ', icon:'fa-book-open', color:'#1565C0', bgColor:'#E3F2FD', status:true },
+    { id:'budget', name:'งานงบประมาณ', icon:'fa-coins', color:'#2E7D32', bgColor:'#E8F5E9', status:true },
+    { id:'personnel', name:'งานบุคคล', icon:'fa-users', color:'#E65100', bgColor:'#FFF3E0', status:true },
+    { id:'general', name:'งานบริหารทั่วไป', icon:'fa-building', color:'#6A1B9A', bgColor:'#F3E5F5', status:true }
+  ],
+  systems: [
+    { id:1, dept:'academic', name:'ระบบนิเทศการสอน', desc:'ระบบสำหรับนิเทศและประเมินการสอนของครู', icon:'fa-chalkboard-teacher', color:'#1565C0', url:'https://example.com/supervise', status:true, order:1 },
+    { id:2, dept:'academic', name:'ระบบสถิตินักเรียน', desc:'ระบบรวบรวมและวิเคราะห์สถิตินักเรียน', icon:'fa-chart-bar', color:'#1976D2', url:'https://example.com/stats', status:true, order:2 },
+    { id:3, dept:'academic', name:'ระบบติดตาม 0,ร,มส', desc:'ระบบติดตามนักเรียนที่มีผลการเรียนพิเศษ', icon:'fa-clipboard-list', color:'#0288D1', url:'https://example.com/grade', status:true, order:3 },
+    { id:4, dept:'academic', name:'ระบบส่งแผนการสอน', desc:'ระบบส่งและตรวจสอบแผนการจัดการเรียนรู้', icon:'fa-file-alt', color:'#0097A7', url:'https://example.com/plan', status:true, order:4 },
+    { id:5, dept:'budget', name:'ระบบพัสดุโรงเรียน', desc:'ระบบบริหารจัดการพัสดุและครุภัณฑ์', icon:'fa-boxes', color:'#2E7D32', url:'https://example.com/supply', status:true, order:1 },
+    { id:6, dept:'budget', name:'ระบบการเงินโรงเรียน', desc:'ระบบบัญชีและการเงินโรงเรียน', icon:'fa-money-bill-wave', color:'#388E3C', url:'https://example.com/finance', status:true, order:2 },
+    { id:7, dept:'budget', name:'ระบบร้านค้าสหกรณ์', desc:'ระบบจัดการร้านค้าสหกรณ์โรงเรียน', icon:'fa-store', color:'#43A047', url:'https://example.com/coop', status:true, order:3 },
+    { id:8, dept:'budget', name:'ระบบจัดซื้อจัดจ้าง', desc:'ระบบบริหารการจัดซื้อจัดจ้างตามระเบียบ', icon:'fa-shopping-cart', color:'#00897B', url:'https://example.com/procurement', status:false, order:4 },
+    { id:9, dept:'personnel', name:'ระบบการลา', desc:'ระบบยื่น อนุมัติ และติดตามการลาของบุคลากร', icon:'fa-calendar-times', color:'#E65100', url:'https://example.com/leave', status:true, order:1 },
+    { id:10, dept:'personnel', name:'ระบบเลื่อนเงินเดือน', desc:'ระบบประเมินและเลื่อนขั้นเงินเดือนบุคลากร', icon:'fa-hand-holding-usd', color:'#EF6C00', url:'https://example.com/salary', status:true, order:2 },
+    { id:11, dept:'personnel', name:'ระบบบันทึก PLC', desc:'ระบบบันทึกชุมชนการเรียนรู้ทางวิชาชีพ', icon:'fa-users-cog', color:'#F57C00', url:'https://example.com/plc', status:true, order:3 },
+    { id:12, dept:'personnel', name:'ระบบข้อมูลครูและบุคลากร', desc:'ระบบฐานข้อมูลครูและบุคลากรทางการศึกษา', icon:'fa-id-card', color:'#D84315', url:'https://example.com/staff', status:true, order:4 },
+    { id:13, dept:'general', name:'ระบบสารบรรณ', desc:'ระบบรับ-ส่งหนังสือราชการและสารบรรณอิเล็กทรอนิกส์', icon:'fa-envelope-open-text', color:'#6A1B9A', url:'https://example.com/doc', status:true, order:1 },
+    { id:14, dept:'general', name:'ระบบจองห้องประชุม', desc:'ระบบจองและจัดการห้องประชุม', icon:'fa-door-open', color:'#7B1FA2', url:'https://example.com/room', status:true, order:2 },
+    { id:15, dept:'general', name:'ระบบแจ้งซ่อม', desc:'ระบบแจ้งและติดตามการซ่อมบำรุงครุภัณฑ์', icon:'fa-tools', color:'#8E24AA', url:'https://example.com/repair', status:true, order:3 },
+    { id:16, dept:'general', name:'ระบบประชาสัมพันธ์', desc:'ระบบเผยแพร่ข่าวสารและประชาสัมพันธ์', icon:'fa-bullhorn', color:'#AB47BC', url:'https://example.com/pr', status:true, order:4 }
+  ],
+  logs: [
+    { id:1, user:'admin', action:'เข้าสู่ระบบ', detail:'', time: new Date().toLocaleString('th-TH') }
+  ]
+};
+
+let currentUser = null;
+let sidebarCollapsed = false;
+
+// ============================================================
+// FIREBASE CONFIG / FIRESTORE DATABASE
+// ============================================================
+// วิธีใช้: นำค่า firebaseConfig จาก Firebase Console > Project settings > Your apps > Web app
+// มาแทนค่าด้านล่าง แล้วอัปโหลดไฟล์นี้ขึ้น GitHub Pages
+const firebaseConfig = {
+  apiKey: "ใส่ apiKey ของท่าน",
+  authDomain: "ใส่ authDomain ของท่าน",
+  projectId: "ใส่ projectId ของท่าน",
+  storageBucket: "ใส่ storageBucket ของท่าน",
+  messagingSenderId: "ใส่ messagingSenderId ของท่าน",
+  appId: "ใส่ appId ของท่าน"
+};
+
+let firestoreDB = null;
+let firebaseConnected = false;
+const DEFAULT_DB = JSON.parse(JSON.stringify(DB));
+
+function isFirebaseConfigReady() {
+  return firebaseConfig.projectId && !firebaseConfig.projectId.includes("ใส่");
+}
+
+function showLoadingPage(message = "กำลังเชื่อมต่อฐานข้อมูล Firebase...") {
+  const page = document.getElementById('pageContent');
+  if (page) {
+    page.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:var(--shadow)">
+        <i class="fas fa-database" style="font-size:42px;color:var(--primary);margin-bottom:14px"></i>
+        <h2 style="margin-bottom:8px">${message}</h2>
+        <p style="color:var(--text-secondary)">กรุณารอสักครู่ ระบบกำลังเตรียมข้อมูล</p>
+      </div>`;
+  }
+}
+
+async function initFirebaseAndLoadDatabase() {
+  if (!isFirebaseConfigReady()) {
+    console.warn('ยังไม่ได้ใส่ firebaseConfig ระบบจะใช้ข้อมูลตัวอย่างในไฟล์ชั่วคราว');
+    firebaseConnected = false;
+    await Swal.fire({
+      icon: 'warning',
+      title: 'ยังไม่ได้ตั้งค่า Firebase',
+      html: 'กรุณาใส่ค่า <b>firebaseConfig</b> ในไฟล์ index.html ก่อนใช้งานฐานข้อมูลจริง<br>ตอนนี้ระบบจะแสดงข้อมูลตัวอย่างในไฟล์เท่านั้น',
+      confirmButtonColor: '#1565C0'
+    });
+    return;
+  }
+
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firestoreDB = firebase.firestore();
+    firebaseConnected = true;
+    await seedDefaultDataIfEmpty();
+    await loadDatabaseFromFirebase();
+  } catch (error) {
+    console.error('Firebase init/load error:', error);
+    firebaseConnected = false;
+    await Swal.fire({
+      icon: 'error',
+      title: 'เชื่อมต่อ Firebase ไม่สำเร็จ',
+      html: `<div style="text-align:left">${escapeHtml(error.message || String(error))}<br><br>ให้ตรวจสอบ firebaseConfig, Firestore Database และ Rules</div>`,
+      confirmButtonColor: '#1565C0'
+    });
+  }
+}
+
+function fbReady() {
+  return firebaseConnected && firestoreDB;
+}
+
+async function getCollectionArray(collectionName) {
+  const snap = await firestoreDB.collection(collectionName).get();
+  return snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+async function seedDefaultDataIfEmpty() {
+  if (!fbReady()) return;
+
+  const settingsDoc = await firestoreDB.collection('settings').doc('main').get();
+  const systemsSnap = await firestoreDB.collection('systems').limit(1).get();
+
+  if (settingsDoc.exists || !systemsSnap.empty) return;
+
+  const batch = firestoreDB.batch();
+  batch.set(firestoreDB.collection('settings').doc('main'), DEFAULT_DB.settings);
+
+  DEFAULT_DB.departments.forEach(item => {
+    const id = String(item.id);
+    batch.set(firestoreDB.collection('departments').doc(id), { ...item, id });
+  });
+
+  DEFAULT_DB.systems.forEach(item => {
+    const id = String(item.id);
+    batch.set(firestoreDB.collection('systems').doc(id), { ...item, id });
+  });
+
+  DEFAULT_DB.users.forEach(item => {
+    const id = String(item.id);
+    batch.set(firestoreDB.collection('users').doc(id), { ...item, id });
+  });
+
+  batch.set(firestoreDB.collection('logs').doc(String(Date.now())), {
+    user: 'system',
+    action: 'สร้างข้อมูลเริ่มต้น',
+    detail: 'Seed default data',
+    time: new Date().toLocaleString('th-TH'),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  await batch.commit();
+}
+
+async function loadDatabaseFromFirebase() {
+  if (!fbReady()) return;
+
+  const settingsDoc = await firestoreDB.collection('settings').doc('main').get();
+  DB.settings = settingsDoc.exists ? { ...DEFAULT_DB.settings, ...settingsDoc.data() } : { ...DEFAULT_DB.settings };
+
+  DB.departments = await getCollectionArray('departments');
+  DB.systems = await getCollectionArray('systems');
+  DB.users = await getCollectionArray('users');
+  DB.logs = await getCollectionArray('logs');
+
+  DB.departments.sort((a,b) => String(a.id).localeCompare(String(b.id)));
+  DB.systems.sort((a,b) => (Number(a.order)||0) - (Number(b.order)||0));
+  DB.users.sort((a,b) => String(a.name||'').localeCompare(String(b.name||''), 'th'));
+  DB.logs.sort((a,b) => (Number(b.createdAtMillis)||0) - (Number(a.createdAtMillis)||0));
+  DB.logs = DB.logs.slice(0, 200);
+}
+
+async function refreshAfterSave(page) {
+  if (fbReady()) await loadDatabaseFromFirebase();
+  buildSidebar();
+  if (page) navigate(page);
+}
+
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+
+// ============================================================
+// AUTH
+// ============================================================
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const found = DB.users.find(x => String(x.username) === u && String(x.password) === p && x.status);
+  if (!found) { Swal.fire({ icon:'error', title:'เข้าสู่ระบบไม่สำเร็จ', text:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', confirmButtonColor:'#1565C0', fontFamily:'Kanit' }); return; }
+  if (DB.settings.maintenance && found.role !== 'admin') { Swal.fire({ icon:'warning', title:'ระบบอยู่ในโหมดบำรุงรักษา', text:'กรุณาติดต่อผู้ดูแลระบบ', confirmButtonColor:'#1565C0' }); return; }
+  currentUser = found;
+  addLog(found.name, 'เข้าสู่ระบบ', '');
+  updateAuthUI();
+  buildSidebar();
+  navigate(found.role === 'admin' ? 'manage-systems' : 'dashboard');
+}
+
+function renderLoginPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="login-page-wrap">
+      <div class="login-page-card">
+        <div class="login-page-logo">
+          <div class="lp-icon"><i class="fas fa-user-shield"></i></div>
+          <h2>เข้าสู่ระบบจัดการ</h2>
+          <p>${DB.settings.systemName}</p>
+        </div>
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" />
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()" />
+        <button class="btn-login-main" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
+        </div>
+    </div>`;
+}
+
+function doLogout() {
+  Swal.fire({
+    title: 'ออกจากระบบ?', text: 'คุณต้องการออกจากระบบใช่หรือไม่',
+    icon: 'question', showCancelButton: true,
+    confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#C62828'
+  }).then(r => {
+    if (r.isConfirmed) {
+      addLog(currentUser.name, 'ออกจากระบบ', '');
+      currentUser = null;
+      updateAuthUI();
+      buildSidebar();
+      navigate('dashboard');
+    }
+  });
+}
+
+function updateAuthUI() {
+  const loggedIn = !!currentUser;
+  // sidebar footer (user info) - only shown when logged in
+  const footer = document.getElementById('sidebarFooter');
+  footer.style.display = loggedIn ? '' : 'none';
+  // topbar user info + logout
+  const topInfo = document.getElementById('topbarUserInfo');
+  if (loggedIn) {
+    document.getElementById('userAvatar').textContent = currentUser.name.charAt(0);
+    document.getElementById('userName').textContent = currentUser.name;
+    document.getElementById('userRoleLabel').textContent = { admin:'ผู้ดูแลระบบ', director:'ผู้อำนวยการ', teacher:'ครู' }[currentUser.role];
+    topInfo.style.display = 'flex';
+    document.getElementById('topbarUserName').textContent = currentUser.name;
+  } else {
+    topInfo.style.display = 'none';
+  }
+}
+
+function addLog(user, action, detail) {
+  const log = {
+    id: String(Date.now()),
+    user: user || 'guest',
+    action: action || '',
+    detail: detail || '',
+    time: new Date().toLocaleString('th-TH'),
+    createdAtMillis: Date.now()
+  };
+  DB.logs.unshift(log);
+  if (DB.logs.length > 200) DB.logs.pop();
+
+  if (fbReady()) {
+    firestoreDB.collection('logs').add({
+      ...log,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(err => console.error('Save log error:', err));
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function initApp() {
+  showLoadingPage();
+  await initFirebaseAndLoadDatabase();
+  document.getElementById('sidebarTitle').innerHTML = `ระบบรวมศูนย์<span>${DB.settings.schoolName.substring(0,20)}</span>`;
+  updateAuthUI();
+  buildSidebar();
+  navigate('dashboard');
+}
+
+function buildSidebar() {
+  const role = currentUser ? currentUser.role : 'guest';
+  const depts = DB.departments.filter(d => d.status);
+
+  const navItem = (page, icon, label) =>
+    `<div class="nav-item" data-page="${page}" data-tooltip="${label}" onclick="navigate('${page}')">
+      <span class="nav-icon"><i class="fas ${icon}"></i></span>
+      <span class="nav-label">${label}</span>
+    </div>`;
+
+  let html = `<div class="nav-section">หน้าหลัก</div>
+    ${navItem('dashboard','fa-th-large','Dashboard')}
+    <div class="nav-section">กลุ่มงาน</div>`;
+
+  depts.forEach(d => {
+    if (role === 'teacher' && !currentUser.depts.includes(d.id)) return;
+    html += navItem(`dept-${d.id}`, d.icon, d.name);
+  });
+
+  html += `<div class="nav-section">จัดการระบบ</div>`;
+  if (role === 'admin') {
+    html += navItem('manage-systems','fa-cog','จัดการระบบ');
+    html += navItem('manage-depts','fa-layer-group','จัดการกลุ่มงาน');
+    html += navItem('manage-users','fa-user-cog','จัดการผู้ใช้');
+    html += navItem('settings','fa-sliders-h','ตั้งค่าระบบ');
+    html += navItem('logs','fa-history','บันทึกกิจกรรม');
+  } else if (role === 'director') {
+    html += navItem('manage-systems','fa-cog','จัดการระบบ');
+  } else {
+    html += navItem('admin-login','fa-sign-in-alt','เข้าสู่ระบบจัดการ');
+  }
+
+  document.getElementById('sidebarNav').innerHTML = html;
+}
+
+function navigate(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const active = document.querySelector(`[data-page="${page}"]`);
+  if (active) active.classList.add('active');
+  closeMobileSidebar();
+
+  const pageTitles = {
+    dashboard: 'Dashboard',
+    'manage-systems': 'จัดการระบบ',
+    'manage-depts': 'จัดการกลุ่มงาน',
+    'manage-users': 'จัดการผู้ใช้',
+    settings: 'ตั้งค่าระบบ',
+    logs: 'บันทึกกิจกรรม'
+  };
+
+  let title = pageTitles[page] || '';
+  if (page.startsWith('dept-')) {
+    const d = DB.departments.find(x => x.id === page.replace('dept-', ''));
+    title = d ? d.name : '';
+  }
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('globalSearch').value = '';
+
+  if (page === 'dashboard') renderDashboard();
+  else if (page.startsWith('dept-')) renderDept(page.replace('dept-', ''));
+  else if (page === 'admin-login') renderLoginPage();
+  else if (page === 'manage-systems' && currentUser) renderManageSystems();
+  else if (page === 'manage-depts' && currentUser?.role === 'admin') renderManageDepts();
+  else if (page === 'manage-users' && currentUser?.role === 'admin') renderManageUsers();
+  else if (page === 'settings' && currentUser?.role === 'admin') renderSettings();
+  else if (page === 'logs' && currentUser?.role === 'admin') renderLogs();
+  else { navigate('admin-login'); }
+}
+
+// ============================================================
+// SIDEBAR TOGGLE
+// ============================================================
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (window.innerWidth <= 768) {
+    sidebar.classList.toggle('mobile-open');
+    document.getElementById('mobileOverlay').classList.toggle('show');
+  } else {
+    sidebarCollapsed = !sidebarCollapsed;
+    sidebar.classList.toggle('collapsed', sidebarCollapsed);
+  }
+}
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('mobileOverlay').classList.remove('show');
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const counts = {};
+  DB.departments.forEach(d => { counts[d.id] = DB.systems.filter(s => s.dept === d.id && s.status).length; });
+  const userCount = DB.users.filter(u => u.status).length;
+
+  const statCards = [
+    { label:'ระบบทั้งหมด', value: DB.systems.length, icon:'fa-th-large', color:'#1565C0', bg:'#E3F2FD' },
+    { label:'งานวิชาการ', value: counts.academic||0, icon:'fa-book-open', color:'#1976D2', bg:'#E8F1FD' },
+    { label:'งานงบประมาณ', value: counts.budget||0, icon:'fa-coins', color:'#2E7D32', bg:'#E8F5E9' },
+    { label:'งานบุคคล', value: counts.personnel||0, icon:'fa-users', color:'#E65100', bg:'#FFF3E0' },
+    { label:'งานบริหารทั่วไป', value: counts.general||0, icon:'fa-building', color:'#6A1B9A', bg:'#F3E5F5' },
+    ...(currentUser ? [{ label:'ผู้ใช้งานทั้งหมด', value: userCount, icon:'fa-user-check', color:'#00838F', bg:'#E0F7FA' }] : [])
+  ];
+
+  const statsHtml = `<div class="stats-grid">` + statCards.map(c => `
+    <div class="stat-card">
+      <div class="stat-icon" style="background:${c.bg}">
+        <i class="fas ${c.icon}" style="color:${c.color}"></i>
+      </div>
+      <div>
+        <div class="stat-label">${c.label}</div>
+        <div class="stat-value" style="color:${c.color}">${c.value}</div>
+      </div>
+    </div>`).join('') + `</div>`;
+
+  // Charts section
+  const chartsHtml = `
+    <div class="charts-grid">
+      <div class="chart-card chart-card-wide">
+        <div class="chart-card-header">
+          <div class="section-title"><i class="fas fa-chart-line"></i> สถิติการเข้าใช้งานระบบรายกลุ่ม</div>
+          <span style="font-size:12px;color:var(--text-muted)">ข้อมูลจำลอง 7 วันล่าสุด</span>
+        </div>
+        <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="section-title"><i class="fas fa-chart-pie"></i> สัดส่วนระบบแต่ละกลุ่มงาน</div>
+        </div>
+        <div class="chart-wrap chart-wrap-pie"><canvas id="pieChart"></canvas></div>
+        <div id="pieLegend" class="pie-legend"></div>
+      </div>
+    </div>`;
+
+  document.getElementById('pageContent').innerHTML = statsHtml + chartsHtml;
+  renderCharts(counts);
+}
+
+function renderCharts(counts) {
+  const days = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
+  const deptColors = ['#1565C0','#2E7D32','#E65100','#6A1B9A'];
+  const deptNames = DB.departments.filter(d=>d.status).map(d=>d.name);
+  const deptIds   = DB.departments.filter(d=>d.status).map(d=>d.id);
+
+  // Generate simulated daily usage data
+  const seed = (base, idx) => days.map((_, i) =>
+    Math.max(1, Math.round(base + Math.sin(i * 1.3 + idx) * base * 0.4 + Math.random() * base * 0.25)));
+
+  const lineDatasets = deptIds.map((id, i) => ({
+    label: deptNames[i],
+    data: seed((counts[id]||1) * 3 + 5, i),
+    borderColor: deptColors[i],
+    backgroundColor: deptColors[i] + '18',
+    borderWidth: 2.5,
+    pointBackgroundColor: deptColors[i],
+    pointRadius: 4, pointHoverRadius: 6,
+    tension: 0.4, fill: true
+  }));
+
+  // Line Chart
+  const lineCtx = document.getElementById('lineChart');
+  if (lineCtx) {
+    new Chart(lineCtx, {
+      type: 'line',
+      data: { labels: days, datasets: lineDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: 'Kanit', size: 12 }, padding: 16, usePointStyle: true } }
+        },
+        scales: {
+          x: { grid: { color: '#E0E8F0' }, ticks: { font: { family: 'Kanit' } } },
+          y: { grid: { color: '#E0E8F0' }, ticks: { font: { family: 'Kanit' }, stepSize: 2 }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // Pie Chart
+  const pieCtx = document.getElementById('pieChart');
+  const pieData = deptIds.map(id => DB.systems.filter(s => s.dept === id).length);
+  if (pieCtx) {
+    new Chart(pieCtx, {
+      type: 'doughnut',
+      data: {
+        labels: deptNames,
+        datasets: [{ data: pieData, backgroundColor: deptColors, borderColor: '#fff', borderWidth: 3, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} ระบบ` } }
+        },
+        cutout: '62%'
+      }
+    });
+    // Custom legend
+    const legend = document.getElementById('pieLegend');
+    if (legend) {
+      legend.innerHTML = deptNames.map((n, i) => `
+        <div class="pie-legend-item">
+          <span class="pie-legend-dot" style="background:${deptColors[i]}"></span>
+          <span>${n}</span>
+          <span class="pie-legend-val">${pieData[i]} ระบบ</span>
+        </div>`).join('');
+    }
+  }
+}
+
+function handleGlobalSearch(q) {
+  if (!q) { navigate('dashboard'); return; }
+  const results = DB.systems.filter(s => s.name.includes(q) || s.desc.includes(q));
+  document.getElementById('pageContent').innerHTML = `
+    <div class="section-header"><div class="section-title"><i class="fas fa-search"></i>ผลการค้นหา: "${q}" (${results.length} รายการ)</div></div>
+    <div class="systems-grid">${renderSystemCards(results, false)}</div>`;
+}
+
+function renderSystemCards(systems, readonly) {
+  if (!systems.length) return `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)"><i class="fas fa-inbox" style="font-size:40px;display:block;margin-bottom:12px"></i>ไม่พบระบบงาน</div>`;
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  return systems.sort((a,b)=>a.order-b.order).map(sys => {
+    const dept = DB.departments.find(d => d.id === sys.dept);
+    return `<div class="system-card">
+      <div class="sys-header">
+        <div class="sys-icon" style="background:${sys.color}"><i class="fas ${sys.icon}"></i></div>
+        <div class="sys-info">
+          <div class="sys-name">${sys.name}</div>
+          <div class="sys-desc">${sys.desc}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${dept ? `<span class="badge badge-dept" style="background:${dept.bgColor||'#eee'};color:${dept.color}"><i class="fas ${dept.icon}"></i> ${dept.name}</span>` : ''}
+        <span class="badge ${sys.status ? 'badge-active' : 'badge-inactive'}">
+          <i class="fas fa-circle" style="font-size:7px"></i> ${sys.status ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+        </span>
+      </div>
+      <div class="sys-footer">
+        <button class="btn btn-primary btn-sm" onclick="openSystem('${sys.url}','${sys.name}')">
+          <i class="fas fa-external-link-alt"></i> เปิดระบบ
+        </button>
+        ${isAdmin ? `
+        <div class="actions">
+          <button class="btn btn-outline btn-sm btn-icon" onclick="editSystem('${sys.id}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSystem('${sys.id}')" title="ลบ"><i class="fas fa-trash"></i></button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSystem(url, name) {
+  if (currentUser) addLog(currentUser.name, 'เปิดระบบ', name);
+  window.open(url, '_blank');
+}
+
+// ============================================================
+// DEPT PAGE
+// ============================================================
+function renderDept(deptId) {
+  const dept = DB.departments.find(d => d.id === deptId);
+  if (!dept) { document.getElementById('pageContent').innerHTML = '<p>ไม่พบกลุ่มงาน</p>'; return; }
+  const systems = DB.systems.filter(s => s.dept === deptId);
+  const canSee = !currentUser || currentUser.role !== 'teacher' || currentUser.depts.includes(deptId);
+  if (!canSee) { document.getElementById('pageContent').innerHTML = '<p style="padding:40px;text-align:center;color:var(--danger)"><i class="fas fa-lock" style="font-size:40px;display:block;margin-bottom:12px"></i>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>'; return; }
+
+  document.getElementById('pageContent').innerHTML = `
+    <div style="background:${dept.bgColor};border-radius:16px;padding:24px;margin-bottom:24px;display:flex;align-items:center;gap:16px">
+      <div style="width:56px;height:56px;background:${dept.color};border-radius:14px;display:flex;align-items:center;justify-content:center">
+        <i class="fas ${dept.icon}" style="font-size:26px;color:#fff"></i>
+      </div>
+      <div>
+        <div style="font-size:22px;font-weight:700;color:${dept.color}">${dept.name}</div>
+        <div style="color:var(--text-secondary);font-size:14px">${systems.filter(s=>s.status).length} ระบบที่เปิดใช้งาน จาก ${systems.length} ระบบทั้งหมด</div>
+      </div>
+    </div>
+    <div class="systems-grid">${renderSystemCards(systems, false)}</div>`;
+}
+
+// ============================================================
+// MANAGE SYSTEMS
+// ============================================================
+function renderManageSystems() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="filter-bar" style="margin:0;flex:1">
+          <input type="text" id="sysSearch" placeholder="ค้นหาระบบ..." oninput="filterSystems()">
+          <select id="sysDeptFilter" onchange="filterSystems()">
+            <option value="">ทุกกลุ่มงาน</option>
+            ${DB.departments.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}
+          </select>
+          <select id="sysStatusFilter" onchange="filterSystems()">
+            <option value="">ทุกสถานะ</option>
+            <option value="1">เปิดใช้งาน</option>
+            <option value="0">ปิดใช้งาน</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openSystemModal(null)"><i class="fas fa-plus"></i> เพิ่มระบบ</button>
+      </div>
+      <div class="card-body">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>ระบบ</th><th>กลุ่มงาน</th><th>ลิงก์</th><th>สถานะ</th><th>ลำดับ</th><th>จัดการ</th></tr></thead>
+          <tbody id="sysTableBody"></tbody>
+        </table>
+      </div>
+    </div>`;
+  filterSystems();
+}
+
+function filterSystems() {
+  const q = (document.getElementById('sysSearch')?.value||'').toLowerCase();
+  const dept = document.getElementById('sysDeptFilter')?.value || '';
+  const status = document.getElementById('sysStatusFilter')?.value;
+  let filtered = DB.systems.filter(s => {
+    const matchQ = s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q);
+    const matchD = !dept || s.dept === dept;
+    const matchS = status === '' || s.status == (status === '1');
+    return matchQ && matchD && matchS;
+  });
+  const tbody = document.getElementById('sysTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = filtered.sort((a,b)=>a.order-b.order).map((s,i) => {
+    const dept = DB.departments.find(d=>d.id===s.dept);
+    return `<tr>
+      <td>${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:${s.color};display:flex;align-items:center;justify-content:center">
+          <i class="fas ${s.icon}" style="color:#fff;font-size:14px"></i></div>
+        <div><div style="font-weight:500">${s.name}</div><div style="font-size:12px;color:var(--text-secondary)">${s.desc}</div></div>
+      </div></td>
+      <td><span class="badge badge-dept" style="background:${dept?.bgColor||'#eee'};color:${dept?.color||'#333'}">${dept?.name||'-'}</span></td>
+      <td><a href="${s.url}" target="_blank" style="color:var(--primary);font-size:12px;text-decoration:none">${s.url.substring(0,30)}...</a></td>
+      <td>
+        <label class="toggle"><input type="checkbox" ${s.status?'checked':''} onchange="toggleSystem('${s.id}',this.checked)"><span class="toggle-slider"></span></label>
+      </td>
+      <td>${s.order}</td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-sm btn-icon" onclick="openSystem('${s.url}','${s.name}')" title="เปิด"><i class="fas fa-external-link-alt"></i></button>
+        <button class="btn btn-outline btn-sm btn-icon" onclick="editSystem('${s.id}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSystem('${s.id}')" title="ลบ"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">ไม่พบข้อมูล</td></tr>`;
+}
+
+async function toggleSystem(id, val) {
+  const sys = DB.systems.find(s=>String(s.id)===String(id));
+  if (!sys) return;
+  sys.status = val;
+  try {
+    if (fbReady()) await firestoreDB.collection('systems').doc(String(id)).update({ status: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    addLog(currentUser?.name, val?'เปิดใช้งาน':'ปิดใช้งาน', sys.name);
+  } catch (error) {
+    console.error('toggleSystem error:', error);
+    Swal.fire({ icon:'error', title:'ปรับสถานะไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+function openSystemModal(sys) {function openSystemModal(sys) {
+  const title = sys ? 'แก้ไขระบบ' : 'เพิ่มระบบใหม่';
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>ชื่อระบบ *</label><input id="f_name" value="${sys?.name||''}" placeholder="ชื่อระบบ"></div>
+      <div class="form-group"><label>กลุ่มงาน *</label>
+        <select id="f_dept">${DB.departments.map(d=>`<option value="${d.id}" ${sys?.dept===d.id?'selected':''}>${d.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label>รายละเอียด</label><textarea id="f_desc" rows="2">${sys?.desc||''}</textarea></div>
+    <div class="form-group"><label>URL ลิงก์ *</label><input id="f_url" value="${sys?.url||''}" placeholder="https://"></div>
+    <div class="form-row">
+      <div class="form-group"><label>ไอคอน (Font Awesome)</label><input id="f_icon" value="${sys?.icon||'fa-link'}" placeholder="fa-link"></div>
+      <div class="form-group"><label>สี</label><input type="color" id="f_color" value="${sys?.color||'#1565C0'}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>ลำดับ</label><input type="number" id="f_order" value="${sys?.order||1}" min="1"></div>
+      <div class="form-group"><label>สถานะ</label>
+        <select id="f_status"><option value="1" ${sys?.status!==false?'selected':''}>เปิดใช้งาน</option><option value="0" ${sys?.status===false?'selected':''}>ปิดใช้งาน</option></select>
+      </div>
+    </div>`;
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+    <button class="btn btn-primary" onclick="saveSystem('${sys?.id||''}')"><i class="fas fa-save"></i> บันทึก</button>`;
+  openModal();
+}
+
+async function saveSystem(id) {
+  const name = document.getElementById('f_name').value.trim();
+  const url = document.getElementById('f_url').value.trim();
+  if (!name || !url) { Swal.fire({ icon:'warning', title:'กรุณากรอกข้อมูล', text:'ชื่อระบบและ URL จำเป็นต้องระบุ', confirmButtonColor:'#1565C0' }); return; }
+  const data = {
+    dept: document.getElementById('f_dept').value,
+    name, url,
+    desc: document.getElementById('f_desc').value,
+    icon: document.getElementById('f_icon').value || 'fa-link',
+    color: document.getElementById('f_color').value,
+    order: parseInt(document.getElementById('f_order').value)||1,
+    status: document.getElementById('f_status').value === '1',
+    updatedAtMillis: Date.now()
+  };
+  try {
+    if (fbReady()) {
+      if (id) {
+        await firestoreDB.collection('systems').doc(String(id)).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const idx = DB.systems.findIndex(s=>String(s.id)===String(id));
+        if (idx > -1) DB.systems[idx] = { ...DB.systems[idx], ...data };
+        addLog(currentUser?.name, 'แก้ไขระบบ', name);
+      } else {
+        const docRef = await firestoreDB.collection('systems').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await docRef.update({ id: docRef.id });
+        DB.systems.push({ id: docRef.id, ...data });
+        addLog(currentUser?.name, 'เพิ่มระบบ', name);
+      }
+    } else {
+      if (id) {
+        const idx = DB.systems.findIndex(s=>String(s.id)===String(id));
+        if (idx > -1) DB.systems[idx] = { ...DB.systems[idx], ...data };
+      } else {
+        DB.systems.push({ id: String(Date.now()), ...data });
+      }
+      addLog(currentUser?.name, id ? 'แก้ไขระบบ' : 'เพิ่มระบบ', name);
+    }
+    closeModal();
+    Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false });
+    await refreshAfterSave('manage-systems');
+  } catch (error) {
+    console.error('saveSystem error:', error);
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+function editSystem(id) {
+  const sys = DB.systems.find(s=>String(s.id)===String(id));
+  openSystemModal(sys);
+}
+
+function deleteSystem(id) {
+  const sys = DB.systems.find(s=>String(s.id)===String(id));
+  Swal.fire({
+    title: `ลบระบบ "${sys?.name}"?`, icon:'warning',
+    showCancelButton:true, confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#C62828'
+  }).then(async r => {
+    if (r.isConfirmed) {
+      try {
+        if (fbReady()) await firestoreDB.collection('systems').doc(String(id)).delete();
+        DB.systems = DB.systems.filter(s=>String(s.id)!==String(id));
+        addLog(currentUser?.name, 'ลบระบบ', sys?.name||'');
+        Swal.fire({ icon:'success', title:'ลบสำเร็จ', timer:1200, showConfirmButton:false });
+        await refreshAfterSave('manage-systems');
+      } catch (error) {
+        console.error('deleteSystem error:', error);
+        Swal.fire({ icon:'error', title:'ลบไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+      }
+    }
+  });
+}
+
+// ============================================================
+// MANAGE DEPARTMENTS// ============================================================
+// MANAGE DEPARTMENTS
+// ============================================================
+function renderManageDepts() {
+  document.getElementById('pageContent').innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <button class="btn btn-primary" onclick="openDeptModal(null)"><i class="fas fa-plus"></i> เพิ่มกลุ่มงาน</button>
+    </div>
+    <div class="card"><div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>กลุ่มงาน</th><th>ไอคอน</th><th>จำนวนระบบ</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+        <tbody id="deptTableBody"></tbody>
+      </table>
+    </div></div>`;
+  renderDeptTable();
+}
+
+function renderDeptTable() {
+  const tbody = document.getElementById('deptTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = DB.departments.map((d,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:9px;background:${d.color};display:flex;align-items:center;justify-content:center">
+          <i class="fas ${d.icon}" style="color:#fff"></i></div>
+        <span style="font-weight:500">${d.name}</span>
+      </div></td>
+      <td><code style="font-size:12px">${d.icon}</code></td>
+      <td>${DB.systems.filter(s=>s.dept===d.id).length} ระบบ</td>
+      <td><label class="toggle"><input type="checkbox" ${d.status?'checked':''} onchange="toggleDept('${d.id}',this.checked)"><span class="toggle-slider"></span></label></td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-sm btn-icon" onclick="openDeptModal('${d.id}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDept('${d.id}')" title="ลบ"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openDeptModal(deptId) {
+  const d = deptId ? DB.departments.find(x=>String(x.id)===String(deptId)) : null;
+  document.getElementById('modalTitle').textContent = d ? 'แก้ไขกลุ่มงาน' : 'เพิ่มกลุ่มงานใหม่';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group"><label>ชื่อกลุ่มงาน *</label><input id="fd_name" value="${d?.name||''}" placeholder="ชื่อกลุ่มงาน"></div>
+    <div class="form-row">
+      <div class="form-group"><label>ไอคอน (Font Awesome)</label><input id="fd_icon" value="${d?.icon||'fa-folder'}" placeholder="fa-folder"></div>
+      <div class="form-group"><label>สีหลัก</label><input type="color" id="fd_color" value="${d?.color||'#1565C0'}"></div>
+    </div>
+    <div class="form-group"><label>สีพื้นหลัง</label><input type="color" id="fd_bgColor" value="${d?.bgColor||'#E3F2FD'}"></div>`;
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+    <button class="btn btn-primary" onclick="saveDept('${deptId||''}')"><i class="fas fa-save"></i> บันทึก</button>`;
+  openModal();
+}
+
+async function saveDept(id) {
+  const name = document.getElementById('fd_name').value.trim();
+  if (!name) { Swal.fire({ icon:'warning', title:'กรุณากรอกชื่อกลุ่มงาน', confirmButtonColor:'#1565C0' }); return; }
+  const data = { name, icon:document.getElementById('fd_icon').value||'fa-folder', color:document.getElementById('fd_color').value, bgColor:document.getElementById('fd_bgColor').value, status:true, updatedAtMillis: Date.now() };
+  try {
+    if (fbReady()) {
+      if (id) {
+        await firestoreDB.collection('departments').doc(String(id)).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const idx = DB.departments.findIndex(d=>String(d.id)===String(id));
+        if (idx > -1) DB.departments[idx] = { ...DB.departments[idx], ...data };
+        addLog(currentUser?.name, 'แก้ไขกลุ่มงาน', name);
+      } else {
+        const newId = name.replace(/\s/g,'').toLowerCase() + Date.now();
+        await firestoreDB.collection('departments').doc(newId).set({ id:newId, ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        DB.departments.push({ id:newId, ...data });
+        addLog(currentUser?.name, 'เพิ่มกลุ่มงาน', name);
+      }
+    } else {
+      if (id) {
+        const idx = DB.departments.findIndex(d=>String(d.id)===String(id));
+        if (idx > -1) DB.departments[idx] = { ...DB.departments[idx], ...data };
+      } else {
+        const newId = name.replace(/\s/g,'').toLowerCase() + Date.now();
+        DB.departments.push({ id:newId, ...data });
+      }
+      addLog(currentUser?.name, id ? 'แก้ไขกลุ่มงาน' : 'เพิ่มกลุ่มงาน', name);
+    }
+    closeModal();
+    Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false });
+    await refreshAfterSave('manage-depts');
+  } catch (error) {
+    console.error('saveDept error:', error);
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+async function toggleDept(id, val) {
+  const d = DB.departments.find(x=>String(x.id)===String(id));
+  if (!d) return;
+  d.status = val;
+  try {
+    if (fbReady()) await firestoreDB.collection('departments').doc(String(id)).update({ status: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    addLog(currentUser?.name, val?'เปิดกลุ่มงาน':'ปิดกลุ่มงาน', d.name);
+    buildSidebar();
+  } catch (error) {
+    console.error('toggleDept error:', error);
+    Swal.fire({ icon:'error', title:'ปรับสถานะไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+function deleteDept(id) {
+  const d = DB.departments.find(x=>String(x.id)===String(id));
+  const sysCount = DB.systems.filter(s=>String(s.dept)===String(id)).length;
+  Swal.fire({
+    title:`ลบกลุ่มงาน "${d?.name}"?`,
+    text: sysCount > 0 ? `มีระบบงานที่เกี่ยวข้อง ${sysCount} ระบบ` : 'การดำเนินการนี้ไม่สามารถยกเลิกได้',
+    icon:'warning', showCancelButton:true, confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#C62828'
+  }).then(async r => {
+    if (r.isConfirmed) {
+      try {
+        if (fbReady()) await firestoreDB.collection('departments').doc(String(id)).delete();
+        DB.departments = DB.departments.filter(x=>String(x.id)!==String(id));
+        addLog(currentUser?.name, 'ลบกลุ่มงาน', d?.name||'');
+        Swal.fire({ icon:'success', title:'ลบสำเร็จ', timer:1200, showConfirmButton:false });
+        await refreshAfterSave('manage-depts');
+      } catch (error) {
+        console.error('deleteDept error:', error);
+        Swal.fire({ icon:'error', title:'ลบไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+      }
+    }
+  });
+}
+
+// ============================================================
+// MANAGE USERS// ============================================================
+// MANAGE USERS
+// ============================================================
+function renderManageUsers() {
+  document.getElementById('pageContent').innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <button class="btn btn-primary" onclick="openUserModal(null)"><i class="fas fa-user-plus"></i> เพิ่มผู้ใช้</button>
+    </div>
+    <div class="card"><div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>ชื่อ-สกุล</th><th>ชื่อผู้ใช้</th><th>ตำแหน่ง</th><th>สิทธิ์</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </div></div>`;
+  renderUserTable();
+}
+
+function renderUserTable() {
+  const roleLabel = { admin:'ผู้ดูแลระบบ', director:'ผู้อำนวยการ', teacher:'ครู' };
+  const roleColor = { admin:'#1565C0', director:'#2E7D32', teacher:'#E65100' };
+  const tbody = document.getElementById('userTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = DB.users.map((u,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${roleColor[u.role]||'#888'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600">${u.name.charAt(0)}</div>
+        ${u.name}
+      </div></td>
+      <td><code>${u.username}</code></td>
+      <td>${u.position}</td>
+      <td><span class="badge" style="background:${roleColor[u.role]}20;color:${roleColor[u.role]}">${roleLabel[u.role]||u.role}</span></td>
+      <td><label class="toggle"><input type="checkbox" ${u.status?'checked':''} onchange="toggleUser('${u.id}',this.checked)"><span class="toggle-slider"></span></label></td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-sm btn-icon" onclick="openUserModal('${u.id}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUser('${u.id}')" title="ลบ" ${String(u.id)===String(currentUser.id)?'disabled':''} ><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openUserModal(userId) {
+  const u = userId ? DB.users.find(x=>String(x.id)===String(userId)) : null;
+  document.getElementById('modalTitle').textContent = u ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>ชื่อ-สกุล *</label><input id="fu_name" value="${u?.name||''}"></div>
+      <div class="form-group"><label>ชื่อผู้ใช้ *</label><input id="fu_username" value="${u?.username||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>รหัสผ่าน ${u?'(เว้นว่างเพื่อคงเดิม)':'*'}</label><input type="password" id="fu_password" placeholder="${u?'ไม่เปลี่ยนแปลง':'รหัสผ่าน'}"></div>
+      <div class="form-group"><label>ตำแหน่ง</label><input id="fu_position" value="${u?.position||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>สิทธิ์ผู้ใช้ *</label>
+        <select id="fu_role" onchange="updateDeptSelect()">
+          <option value="admin" ${u?.role==='admin'?'selected':''}>ผู้ดูแลระบบ (Admin)</option>
+          <option value="director" ${u?.role==='director'?'selected':''}>ผู้อำนวยการ</option>
+          <option value="teacher" ${u?.role==='teacher'?'selected':''}>ครู</option>
+        </select>
+      </div>
+      <div class="form-group"><label>สถานะ</label>
+        <select id="fu_status">
+          <option value="1" ${u?.status!==false?'selected':''}>ใช้งาน</option>
+          <option value="0" ${u?.status===false?'selected':''}>ระงับ</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" id="deptSelectGroup" style="${(!u||u.role!=='teacher')?'display:none':''}">
+      <label>กลุ่มงานที่อนุญาต (สำหรับครู)</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${DB.departments.map(d=>`
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+            <input type="checkbox" value="${d.id}" ${u?.depts?.includes(d.id)?'checked':''} style="width:auto"> ${d.name}
+          </label>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+    <button class="btn btn-primary" onclick="saveUser('${u?.id||''}')"><i class="fas fa-save"></i> บันทึก</button>`;
+  openModal();
+}
+
+function updateDeptSelect() {
+  const role = document.getElementById('fu_role')?.value;
+  const grp = document.getElementById('deptSelectGroup');
+  if (grp) grp.style.display = role === 'teacher' ? '' : 'none';
+}
+
+async function saveUser(id) {
+  const name = document.getElementById('fu_name').value.trim();
+  const username = document.getElementById('fu_username').value.trim();
+  const pass = document.getElementById('fu_password').value;
+  if (!name || !username) { Swal.fire({ icon:'warning', title:'กรุณากรอกข้อมูล', confirmButtonColor:'#1565C0' }); return; }
+  if (!id && !pass) { Swal.fire({ icon:'warning', title:'กรุณากรอกรหัสผ่าน', confirmButtonColor:'#1565C0' }); return; }
+  const role = document.getElementById('fu_role').value;
+  const depts = Array.from(document.querySelectorAll('#deptSelectGroup input:checked')).map(c=>c.value);
+  const data = { name, username, position:document.getElementById('fu_position').value, role, depts, status:document.getElementById('fu_status').value==='1', updatedAtMillis: Date.now() };
+  if (pass) data.password = pass;
+  try {
+    if (fbReady()) {
+      if (id) {
+        await firestoreDB.collection('users').doc(String(id)).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const idx = DB.users.findIndex(u=>String(u.id)===String(id));
+        if (idx > -1) DB.users[idx] = { ...DB.users[idx], ...data };
+        if (currentUser && String(currentUser.id) === String(id)) currentUser = { ...currentUser, ...data };
+        addLog(currentUser?.name, 'แก้ไขผู้ใช้', name);
+      } else {
+        const docRef = await firestoreDB.collection('users').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await docRef.update({ id: docRef.id });
+        DB.users.push({ id:docRef.id, ...data });
+        addLog(currentUser?.name, 'เพิ่มผู้ใช้', name);
+      }
+    } else {
+      if (id) {
+        const idx = DB.users.findIndex(u=>String(u.id)===String(id));
+        if (idx > -1) DB.users[idx] = { ...DB.users[idx], ...data };
+      } else {
+        DB.users.push({ id:String(Date.now()), ...data });
+      }
+      addLog(currentUser?.name, id ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้', name);
+    }
+    closeModal();
+    Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false });
+    await refreshAfterSave('manage-users');
+    updateAuthUI();
+  } catch (error) {
+    console.error('saveUser error:', error);
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+async function toggleUser(id, val) {
+  const u = DB.users.find(x=>String(x.id)===String(id));
+  if (!u) return;
+  u.status = val;
+  try {
+    if (fbReady()) await firestoreDB.collection('users').doc(String(id)).update({ status: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    addLog(currentUser?.name, val?'เปิดผู้ใช้':'ระงับผู้ใช้', u.name);
+  } catch (error) {
+    console.error('toggleUser error:', error);
+    Swal.fire({ icon:'error', title:'ปรับสถานะไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+function deleteUser(id) {
+  if (String(id) === String(currentUser.id)) return;
+  const u = DB.users.find(x=>String(x.id)===String(id));
+  Swal.fire({
+    title:`ลบผู้ใช้ "${u?.name}"?`, icon:'warning',
+    showCancelButton:true, confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#C62828'
+  }).then(async r => {
+    if (r.isConfirmed) {
+      try {
+        if (fbReady()) await firestoreDB.collection('users').doc(String(id)).delete();
+        DB.users = DB.users.filter(x=>String(x.id)!==String(id));
+        addLog(currentUser?.name, 'ลบผู้ใช้', u?.name||'');
+        Swal.fire({ icon:'success', title:'ลบสำเร็จ', timer:1200, showConfirmButton:false });
+        await refreshAfterSave('manage-users');
+      } catch (error) {
+        console.error('deleteUser error:', error);
+        Swal.fire({ icon:'error', title:'ลบไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+      }
+    }
+  });
+}
+
+// ============================================================
+// SETTINGS// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  const s = DB.settings;
+  document.getElementById('pageContent').innerHTML = `
+    <div class="settings-grid">
+      <div class="settings-card">
+        <h3><i class="fas fa-school"></i> ข้อมูลโรงเรียน</h3>
+        <div class="form-group"><label>ชื่อโรงเรียน</label><input id="st_school" value="${s.schoolName}"></div>
+        <div class="form-group"><label>ชื่อระบบ</label><input id="st_system" value="${s.systemName}"></div>
+        <div class="form-group"><label>ชื่อผู้อำนวยการ</label><input id="st_director" value="${s.director}"></div>
+        <div class="form-group"><label>ปีการศึกษา</label><input id="st_year" value="${s.year}"></div>
+        <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> บันทึกการตั้งค่า</button>
+      </div>
+      <div class="settings-card">
+        <h3><i class="fas fa-palette"></i> ธีมและการแสดงผล</h3>
+        <div class="form-group"><label>สีหลักของระบบ</label><input type="color" id="st_color" value="${s.primaryColor}"></div>
+        <div class="form-group"><label>ข้อความ Footer</label><textarea id="st_footer" rows="2">${s.footer}</textarea></div>
+        <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> บันทึก</button>
+      </div>
+      <div class="settings-card">
+        <h3><i class="fas fa-tools"></i> โหมดระบบ</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:500">โหมดบำรุงรักษา</div>
+            <div style="font-size:13px;color:var(--text-secondary)">เมื่อเปิด ผู้ใช้อื่นจะเข้าระบบไม่ได้</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="st_maintenance" ${s.maintenance?'checked':''} onchange="toggleMaintenance(this.checked)"><span class="toggle-slider"></span></label>
+        </div>
+        <div style="margin-top:16px">
+          <div style="font-weight:500;margin-bottom:4px">ข้อมูลระบบ</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:2">
+            จำนวนผู้ใช้: ${DB.users.length} คน<br>
+            จำนวนระบบ: ${DB.systems.length} ระบบ<br>
+            จำนวนกลุ่มงาน: ${DB.departments.length} กลุ่ม<br>
+            จำนวน Log: ${DB.logs.length} รายการ
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function saveSettings() {
+  DB.settings.schoolName = document.getElementById('st_school')?.value || DB.settings.schoolName;
+  DB.settings.systemName = document.getElementById('st_system')?.value || DB.settings.systemName;
+  DB.settings.director = document.getElementById('st_director')?.value || DB.settings.director;
+  DB.settings.year = document.getElementById('st_year')?.value || DB.settings.year;
+  DB.settings.primaryColor = document.getElementById('st_color')?.value || DB.settings.primaryColor;
+  DB.settings.footer = document.getElementById('st_footer')?.value || DB.settings.footer;
+  try {
+    if (fbReady()) {
+      await firestoreDB.collection('settings').doc('main').set({ ...DB.settings, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    }
+    document.getElementById('sidebarTitle').innerHTML = `ระบบรวมศูนย์<span>${DB.settings.schoolName.substring(0,20)}</span>`;
+    addLog(currentUser?.name, 'แก้ไขตั้งค่าระบบ', '');
+    Swal.fire({ icon:'success', title:'บันทึกการตั้งค่าสำเร็จ', timer:1500, showConfirmButton:false });
+  } catch (error) {
+    console.error('saveSettings error:', error);
+    Swal.fire({ icon:'error', title:'บันทึกตั้งค่าไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+async function toggleMaintenance(val) {
+  DB.settings.maintenance = val;
+  try {
+    if (fbReady()) await firestoreDB.collection('settings').doc('main').set({ maintenance: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    addLog(currentUser?.name, val?'เปิดโหมดบำรุงรักษา':'ปิดโหมดบำรุงรักษา', '');
+    Swal.fire({ icon: val?'warning':'success', title: val?'เปิดโหมดบำรุงรักษาแล้ว':'ปิดโหมดบำรุงรักษาแล้ว', timer:1500, showConfirmButton:false });
+  } catch (error) {
+    console.error('toggleMaintenance error:', error);
+    Swal.fire({ icon:'error', title:'ปรับโหมดไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+  }
+}
+
+// ============================================================
+// LOGS// ============================================================
+// LOGS
+// ============================================================
+function renderLogs() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="section-title"><i class="fas fa-history"></i> บันทึกกิจกรรม</div>
+        <button class="btn btn-outline btn-sm" onclick="clearLogs()"><i class="fas fa-trash"></i> ล้างบันทึก</button>
+      </div>
+      <div class="card-body">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>ผู้ใช้</th><th>กิจกรรม</th><th>รายละเอียด</th><th>เวลา</th></tr></thead>
+          <tbody>${DB.logs.map((l,i)=>`
+            <tr>
+              <td>${i+1}</td>
+              <td>${l.user}</td>
+              <td><span class="badge badge-active">${l.action}</span></td>
+              <td>${l.detail||'-'}</td>
+              <td style="font-size:12px;color:var(--text-secondary)">${l.time}</td>
+            </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">ไม่มีบันทึก</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function clearLogs() {
+  Swal.fire({
+    title:'ล้างบันทึกกิจกรรม?', icon:'warning', showCancelButton:true,
+    confirmButtonText:'ล้าง', cancelButtonText:'ยกเลิก', confirmButtonColor:'#C62828'
+  }).then(async r => {
+    if (!r.isConfirmed) return;
+    try {
+      if (fbReady()) {
+        const snap = await firestoreDB.collection('logs').get();
+        const batch = firestoreDB.batch();
+        snap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+      DB.logs = [];
+      renderLogs();
+      Swal.fire({ icon:'success', title:'ล้างบันทึกแล้ว', timer:1200, showConfirmButton:false });
+    } catch (error) {
+      console.error('clearLogs error:', error);
+      Swal.fire({ icon:'error', title:'ล้างบันทึกไม่สำเร็จ', text:error.message, confirmButtonColor:'#1565C0' });
+    }
+  });
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ============================================================
+// VISITOR STATS (localStorage-based)
+// ============================================================
+(function initVisitorStats() {
+  var now = new Date();
+  var todayKey  = 'vstats_d_' + now.getFullYear() + '_' + now.getMonth() + '_' + now.getDate();
+  var monthKey  = 'vstats_m_' + now.getFullYear() + '_' + now.getMonth();
+  var yearKey   = 'vstats_y_' + now.getFullYear();
+  var visitedKey = 'vstats_visited_' + todayKey;
+
+  // Count this visit once per session per day
+  if (!sessionStorage.getItem(visitedKey)) {
+    sessionStorage.setItem(visitedKey, '1');
+    localStorage.setItem(todayKey,  (parseInt(localStorage.getItem(todayKey)  || '0') + 1).toString());
+    localStorage.setItem(monthKey,  (parseInt(localStorage.getItem(monthKey)  || '0') + 1).toString());
+    localStorage.setItem(yearKey,   (parseInt(localStorage.getItem(yearKey)   || '0') + 1).toString());
+  }
+
+  function updateStatsUI() {
+    var today = parseInt(localStorage.getItem(todayKey)  || '0');
+    var month = parseInt(localStorage.getItem(monthKey)  || '0');
+    var year  = parseInt(localStorage.getItem(yearKey)   || '0');
+
+    // Simulate online users: random fluctuation around today count
+    var onlineBase = Math.max(1, Math.floor(today * 0.3));
+    var online = onlineBase + Math.floor(Math.random() * 3);
+
+    var elO = document.getElementById('statOnline');
+    var elT = document.getElementById('statToday');
+    var elM = document.getElementById('statMonth');
+    var elY = document.getElementById('statYear');
+    if (elO) elO.textContent = online;
+    if (elT) elT.textContent = today;
+    if (elM) elM.textContent = month;
+    if (elY) elY.textContent = year;
+  }
+
+  updateStatsUI();
+  setInterval(updateStatsUI, 10000);
+})();
+
+// ============================================================
+// INIT LOGIN SCREEN
+// ============================================================
+initApp();
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAlSR98cBJzCqcuhJ3dUuwsBVmtDaIMYaQ",
+  authDomain: "schoolsystem-db.firebaseapp.com",
+  projectId: "schoolsystem-db",
+  storageBucket: "schoolsystem-db.firebasestorage.app",
+  messagingSenderId: "222178146699",
+  appId: "1:222178146699:web:a64e12887283c87d50d78e"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+                               
+</script>
 </body>
 </html>
