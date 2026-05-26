@@ -1515,16 +1515,16 @@ document.getElementById('modalOverlay').addEventListener('click', e => { if (e.t
 // ============================================================
 initApp();
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// ============================================================
+// FIREBASE FIRESTORE CONNECTION & LIVE RECORD
+// ============================================================
+// 1. นำเข้าเครื่องมือ Firebase ผ่านรูปแบบ Module ที่รองรับในปัจจุบัน
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// 2. รหัสผ่านเชื่อมต่อโครงข่ายคลาวด์เฉพาะของโรงเรียนท่าน
 const firebaseConfig = {
-  apiKey: "AIzaSyDqqmrw1JtVQswTJnqrD2kmvJomxKumM8U",
+  apiKey: "AIzaSyDqqmrw1JtvQswTJnqrD2kmvJomxKumM8U",
   authDomain: "school-system-9f886.firebaseapp.com",
   projectId: "school-system-9f886",
   storageBucket: "school-system-9f886.firebasestorage.app",
@@ -1533,9 +1533,44 @@ const firebaseConfig = {
   measurementId: "G-XFMYE011W6"
 };
 
-// Initialize Firebase
+// 3. เปิดการเชื่อมต่อฐานข้อมูล
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+const db = getFirestore(app);
+
+// 4. ฟังก์ชันหลักสำหรับบันทึกข้อมูล (มีระบบดักจับ Event ป้องกันหน้าจอหายตามที่เราคุยกัน)
+window.saveData = async function(event) {
+  // ดักจับและหยุดระบบส่งฟอร์มปกติของเบราว์เซอร์ เพื่อไม่ให้หน้าจอ Refresh ตัวเอง ข้อมูลจึงไม่หาย
+  if (event) event.preventDefault();
+
+  try {
+    // สั่งยิงข้อมูลขึ้น Cloud ไปเก็บไว้ที่ตู้ข้อมูลชื่อ "school_records"
+    const docRef = await addDoc(collection(db, "school_records"), {
+      schoolName: DB.settings.schoolName,
+      director: DB.settings.director,
+      action: "ทดสอบการเชื่อมต่อระบบหลังบ้านโรงเรียน",
+      status: "เชื่อมต่อฐานข้อมูลถาวรสำเร็จ",
+      timestamp: new Date().toISOString()
+    });
+
+    // ใช้ระบบแจ้งเตือนแบบกล่องสวยงาม (SweetAlert2) ที่มีอยู่ในระบบเดิมของท่านอยู่แล้ว
+    Swal.fire({
+      icon: 'success',
+      title: 'บันทึกสำเร็จ!',
+      text: 'ข้อมูลถูกจัดเก็บลงบนคลาวด์ Firebase เรียบร้อยแล้ว',
+      confirmButtonColor: '#1565C0'
+    });
+
+    console.log("บันทึกสำเร็จในคลังข้อมูล ID:", docRef.id);
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase:", error);
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถส่งข้อมูลไปคลาวด์ได้: ' + error.message,
+      confirmButtonColor: '#C62828'
+    });
+  }
+};
 
 </script>
 </body>
