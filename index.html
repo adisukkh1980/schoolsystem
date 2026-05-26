@@ -48,49 +48,55 @@
       overflow-x: hidden;
     }
 
-    /* ========== LOGIN ========== */
-    #loginOverlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(135deg, #0D47A1 0%, #1565C0 40%, #0288D1 100%);
-      display: flex; align-items: center; justify-content: center;
+    /* ========== SIDEBAR LOGIN PANEL ========== */
+    .sidebar-login-panel {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px; margin: 10px 12px 0;
+      padding: 16px 14px; border: 1px solid rgba(255,255,255,0.15);
     }
-    .login-card {
-      background: #fff; border-radius: 20px; padding: 48px 44px;
-      width: 420px; max-width: 95vw;
-      box-shadow: 0 24px 80px rgba(13,71,161,0.35);
+    .sidebar-login-panel .login-title {
+      color: #fff; font-size: 13px; font-weight: 600; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 7px;
     }
-    .login-logo {
-      text-align: center; margin-bottom: 32px;
+    .sidebar-login-panel .login-title i { color: #29B6F6; font-size: 14px; }
+    .sidebar-login-panel label {
+      display: block; font-size: 11px; font-weight: 500;
+      color: rgba(255,255,255,0.6); margin-bottom: 5px; margin-top: 10px;
     }
-    .login-logo .logo-icon {
-      width: 72px; height: 72px; border-radius: 18px;
-      background: linear-gradient(135deg, #1565C0, #0288D1);
-      display: inline-flex; align-items: center; justify-content: center;
-      margin-bottom: 16px;
+    .sidebar-login-panel label:first-of-type { margin-top: 0; }
+    .sidebar-login-panel input {
+      width: 100%; padding: 9px 11px; border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 8px; font-family: 'Kanit', sans-serif; font-size: 13px;
+      color: #fff; background: rgba(255,255,255,0.12); outline: none;
+      transition: var(--transition);
     }
-    .login-logo .logo-icon i { font-size: 36px; color: #fff; }
-    .login-logo h1 { font-size: 22px; font-weight: 700; color: var(--primary); line-height: 1.3; }
-    .login-logo p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
-    .login-card label { display: block; font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; margin-top: 20px; }
-    .login-card input {
-      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
-      border-radius: 10px; font-family: 'Kanit', sans-serif; font-size: 15px;
-      color: var(--text); outline: none; transition: var(--transition);
-    }
-    .login-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(21,101,192,0.12); }
-    .btn-login {
-      width: 100%; padding: 14px; margin-top: 28px;
-      background: linear-gradient(135deg, #1565C0, #0288D1);
-      color: #fff; border: none; border-radius: 10px;
-      font-family: 'Kanit', sans-serif; font-size: 16px; font-weight: 600;
+    .sidebar-login-panel input::placeholder { color: rgba(255,255,255,0.35); }
+    .sidebar-login-panel input:focus { border-color: #29B6F6; background: rgba(255,255,255,0.18); }
+    .btn-login-sidebar {
+      width: 100%; padding: 10px; margin-top: 12px;
+      background: linear-gradient(135deg, #29B6F6, #0288D1);
+      color: #fff; border: none; border-radius: 8px;
+      font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 600;
       cursor: pointer; transition: var(--transition);
-      box-shadow: 0 4px 16px rgba(21,101,192,0.3);
     }
-    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(21,101,192,0.4); }
-    .login-hint {
-      background: var(--primary-50); border-radius: 10px; padding: 14px 16px;
-      margin-top: 20px; font-size: 13px; color: var(--primary-dark); line-height: 1.8;
+    .btn-login-sidebar:hover { opacity: 0.9; transform: translateY(-1px); }
+    .sidebar-login-hint {
+      margin-top: 10px; font-size: 11px;
+      color: rgba(255,255,255,0.45); line-height: 1.8;
     }
+    .sidebar-user-panel {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px; margin: 10px 12px 0;
+      padding: 12px 14px; border: 1px solid rgba(255,255,255,0.15);
+      display: none;
+    }
+    .sidebar-user-panel .role-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 600; background: #29B6F6; color: #fff; margin-top: 2px;
+    }
+    .sidebar.collapsed .sidebar-login-panel,
+    .sidebar.collapsed .sidebar-user-panel { display: none; }
+    .sidebar.collapsed .sidebar-footer-icon { display: flex !important; }
 
     /* ========== LAYOUT ========== */
     #app { display: flex; min-height: 100vh; }
@@ -333,33 +339,11 @@
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginOverlay">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="logo-icon"><i class="fas fa-school"></i></div>
-      <h1 id="schoolNameLogin">ระบบบริหารจัดการโรงเรียน</h1>
-      <p>แบบรวมศูนย์</p>
-    </div>
-    <label>ชื่อผู้ใช้</label>
-    <input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" />
-    <label>รหัสผ่าน</label>
-    <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()" />
-    <button class="btn-login" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
-    <div class="login-hint">
-      <b>บัญชีทดสอบ:</b><br>
-      admin / admin123 → ผู้ดูแลระบบ<br>
-      director / dir123 → ผู้อำนวยการ<br>
-      teacher / tch123 → ครู
-    </div>
-  </div>
-</div>
-
 <!-- MOBILE OVERLAY -->
 <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
 
 <!-- APP -->
-<div id="app" style="display:none">
+<div id="app">
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -372,12 +356,32 @@
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
     <div class="sidebar-footer">
-      <div class="user-info" onclick="doLogout()">
-        <div class="avatar" id="userAvatar">A</div>
-        <div>
-          <div class="user-name" id="userName">ผู้ดูแลระบบ</div>
-          <div class="user-role" id="userRoleLabel">Admin</div>
+      <!-- LOGIN PANEL (shown when not logged in) -->
+      <div id="sidebarLoginPanel" class="sidebar-login-panel">
+        <div class="login-title"><i class="fas fa-lock"></i> เข้าสู่ระบบจัดการ</div>
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="loginUser" placeholder="username" />
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPass" placeholder="password" onkeydown="if(event.key==='Enter')doLogin()" />
+        <button class="btn-login-sidebar" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
+        <div class="sidebar-login-hint">
+          admin / admin123<br>
+          director / dir123<br>
+          teacher / tch123
         </div>
+      </div>
+      <!-- USER PANEL (shown when logged in) -->
+      <div id="sidebarUserPanel" class="sidebar-user-panel">
+        <div class="user-info" style="padding:0;margin-bottom:10px">
+          <div class="avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">ผู้ดูแลระบบ</div>
+            <span class="role-badge" id="userRoleLabel">Admin</span>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.8)" onclick="doLogout()">
+          <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+        </button>
       </div>
     </div>
   </aside>
@@ -394,7 +398,9 @@
         <input type="text" placeholder="ค้นหาระบบงาน..." id="globalSearch" oninput="handleGlobalSearch(this.value)" />
       </div>
       <div class="topbar-right">
-        <button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
+        <div id="topbarUserInfo" style="display:none;align-items:center;gap:8px">
+          <span style="font-size:13px;color:var(--text-secondary)" id="topbarUserName"></span>
+        </div>
       </div>
     </header>
     <div class="page-content" id="pageContent"></div>
@@ -475,9 +481,9 @@ function doLogin() {
   if (DB.settings.maintenance && found.role !== 'admin') { Swal.fire({ icon:'warning', title:'ระบบอยู่ในโหมดบำรุงรักษา', text:'กรุณาติดต่อผู้ดูแลระบบ', confirmButtonColor:'#1565C0' }); return; }
   currentUser = found;
   addLog(found.name, 'เข้าสู่ระบบ', '');
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  initApp();
+  updateAuthUI();
+  buildSidebar();
+  navigate('dashboard');
 }
 
 function doLogout() {
@@ -489,12 +495,29 @@ function doLogout() {
     if (r.isConfirmed) {
       addLog(currentUser.name, 'ออกจากระบบ', '');
       currentUser = null;
-      document.getElementById('app').style.display = 'none';
-      document.getElementById('loginOverlay').style.display = 'flex';
       document.getElementById('loginUser').value = '';
       document.getElementById('loginPass').value = '';
+      updateAuthUI();
+      buildSidebar();
+      navigate('dashboard');
     }
   });
+}
+
+function updateAuthUI() {
+  const loggedIn = !!currentUser;
+  document.getElementById('sidebarLoginPanel').style.display = loggedIn ? 'none' : '';
+  document.getElementById('sidebarUserPanel').style.display = loggedIn ? '' : 'none';
+  const topInfo = document.getElementById('topbarUserInfo');
+  if (loggedIn) {
+    document.getElementById('userAvatar').textContent = currentUser.name.charAt(0);
+    document.getElementById('userName').textContent = currentUser.name;
+    document.getElementById('userRoleLabel').textContent = { admin:'ผู้ดูแลระบบ', director:'ผู้อำนวยการ', teacher:'ครู' }[currentUser.role];
+    topInfo.style.display = 'flex';
+    document.getElementById('topbarUserName').textContent = currentUser.name;
+  } else {
+    topInfo.style.display = 'none';
+  }
 }
 
 function addLog(user, action, detail) {
@@ -506,17 +529,14 @@ function addLog(user, action, detail) {
 // INIT
 // ============================================================
 function initApp() {
-  document.getElementById('userAvatar').textContent = currentUser.name.charAt(0);
-  document.getElementById('userName').textContent = currentUser.name;
-  document.getElementById('userRoleLabel').textContent = { admin:'ผู้ดูแลระบบ', director:'ผู้อำนวยการ', teacher:'ครู' }[currentUser.role];
   document.getElementById('sidebarTitle').innerHTML = `ระบบรวมศูนย์<span>${DB.settings.schoolName.substring(0,20)}</span>`;
-  document.getElementById('schoolNameLogin').textContent = DB.settings.systemName;
+  updateAuthUI();
   buildSidebar();
   navigate('dashboard');
 }
 
 function buildSidebar() {
-  const role = currentUser.role;
+  const role = currentUser ? currentUser.role : 'guest';
   const depts = DB.departments.filter(d => d.status);
   let html = `<div class="nav-section">หน้าหลัก</div>
     <div class="nav-item" data-page="dashboard" onclick="navigate('dashboard')"><i class="fas fa-th-large"></i><span>Dashboard</span></div>`;
@@ -565,11 +585,12 @@ function navigate(page) {
 
   if (page === 'dashboard') renderDashboard();
   else if (page.startsWith('dept-')) renderDept(page.replace('dept-', ''));
-  else if (page === 'manage-systems') renderManageSystems();
-  else if (page === 'manage-depts') renderManageDepts();
-  else if (page === 'manage-users') renderManageUsers();
-  else if (page === 'settings') renderSettings();
-  else if (page === 'logs') renderLogs();
+  else if (page === 'manage-systems' && currentUser?.role === 'admin') renderManageSystems();
+  else if (page === 'manage-depts' && currentUser?.role === 'admin') renderManageDepts();
+  else if (page === 'manage-users' && currentUser?.role === 'admin') renderManageUsers();
+  else if (page === 'settings' && currentUser?.role === 'admin') renderSettings();
+  else if (page === 'logs' && currentUser?.role === 'admin') renderLogs();
+  else { document.getElementById('pageContent').innerHTML = '<p style="padding:40px;text-align:center;color:var(--danger)"><i class="fas fa-lock" style="font-size:40px;display:block;margin-bottom:12px"></i>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>'; }
 }
 
 // ============================================================
@@ -605,7 +626,7 @@ function renderDashboard() {
     { label:'งานงบประมาณ', value: counts.budget||0, icon:'fa-coins', color:'#2E7D32', bg:'#E8F5E9' },
     { label:'งานบุคคล', value: counts.personnel||0, icon:'fa-users', color:'#E65100', bg:'#FFF3E0' },
     { label:'งานบริหารทั่วไป', value: counts.general||0, icon:'fa-building', color:'#6A1B9A', bg:'#F3E5F5' },
-    { label:'ผู้ใช้งานทั้งหมด', value: userCount, icon:'fa-user-check', color:'#00838F', bg:'#E0F7FA' }
+    ...(currentUser ? [{ label:'ผู้ใช้งานทั้งหมด', value: userCount, icon:'fa-user-check', color:'#00838F', bg:'#E0F7FA' }] : [])
   ];
 
   let statsHtml = `<div class="stats-grid">` + statCards.map(c => `
@@ -648,12 +669,12 @@ function handleGlobalSearch(q) {
   const results = DB.systems.filter(s => s.name.includes(q) || s.desc.includes(q));
   document.getElementById('pageContent').innerHTML = `
     <div class="section-header"><div class="section-title"><i class="fas fa-search"></i>ผลการค้นหา: "${q}" (${results.length} รายการ)</div></div>
-    <div class="systems-grid">${renderSystemCards(results, true)}</div>`;
+    <div class="systems-grid">${renderSystemCards(results, false)}</div>`;
 }
 
 function renderSystemCards(systems, readonly) {
   if (!systems.length) return `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)"><i class="fas fa-inbox" style="font-size:40px;display:block;margin-bottom:12px"></i>ไม่พบระบบงาน</div>`;
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = currentUser && currentUser.role === 'admin';
   return systems.sort((a,b)=>a.order-b.order).map(sys => {
     const dept = DB.departments.find(d => d.id === sys.dept);
     return `<div class="system-card">
@@ -674,11 +695,7 @@ function renderSystemCards(systems, readonly) {
         <button class="btn btn-primary btn-sm" onclick="openSystem('${sys.url}','${sys.name}')">
           <i class="fas fa-external-link-alt"></i> เปิดระบบ
         </button>
-        ${isAdmin && !readonly ? `
-        <div class="actions">
-          <button class="btn btn-outline btn-sm btn-icon" onclick="editSystem(${sys.id})" title="แก้ไข"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSystem(${sys.id})" title="ลบ"><i class="fas fa-trash"></i></button>
-        </div>` : isAdmin ? `
+        ${isAdmin ? `
         <div class="actions">
           <button class="btn btn-outline btn-sm btn-icon" onclick="editSystem(${sys.id})" title="แก้ไข"><i class="fas fa-edit"></i></button>
           <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSystem(${sys.id})" title="ลบ"><i class="fas fa-trash"></i></button>
@@ -689,7 +706,7 @@ function renderSystemCards(systems, readonly) {
 }
 
 function openSystem(url, name) {
-  addLog(currentUser.name, 'เปิดระบบ', name);
+  if (currentUser) addLog(currentUser.name, 'เปิดระบบ', name);
   window.open(url, '_blank');
 }
 
@@ -700,7 +717,7 @@ function renderDept(deptId) {
   const dept = DB.departments.find(d => d.id === deptId);
   if (!dept) { document.getElementById('pageContent').innerHTML = '<p>ไม่พบกลุ่มงาน</p>'; return; }
   const systems = DB.systems.filter(s => s.dept === deptId);
-  const canSee = currentUser.role !== 'teacher' || currentUser.depts.includes(deptId);
+  const canSee = !currentUser || currentUser.role !== 'teacher' || currentUser.depts.includes(deptId);
   if (!canSee) { document.getElementById('pageContent').innerHTML = '<p style="padding:40px;text-align:center;color:var(--danger)"><i class="fas fa-lock" style="font-size:40px;display:block;margin-bottom:12px"></i>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>'; return; }
 
   document.getElementById('pageContent').innerHTML = `
@@ -1187,7 +1204,7 @@ document.getElementById('modalOverlay').addEventListener('click', e => { if (e.t
 // ============================================================
 // INIT LOGIN SCREEN
 // ============================================================
-document.getElementById('schoolNameLogin').textContent = DB.settings.systemName;
+initApp();
 </script>
 </body>
 </html>
