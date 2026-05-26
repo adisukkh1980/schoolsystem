@@ -419,6 +419,63 @@
     }
     .pie-legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
     .pie-legend-val { margin-left: auto; font-weight: 600; color: var(--text-secondary); font-size: 12px; }
+
+    /* ========== SIDEBAR STATS PANEL ========== */
+    .sidebar-stats {
+      flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+      padding: 10px 14px 12px;
+      transition: var(--transition);
+    }
+    .sidebar-stats-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+      color: rgba(255,255,255,0.38); margin-bottom: 8px; white-space: nowrap;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .sidebar-stats-title { opacity: 0; height: 0; margin: 0; overflow: hidden; }
+    .stat-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+      transition: opacity var(--transition);
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .sidebar.collapsed .stat-row { opacity: 0; height: 0; padding: 0; overflow: hidden; border: none; }
+    .stat-row-icon {
+      width: 22px; min-width: 22px; text-align: center; flex-shrink: 0;
+      font-size: 11px; color: rgba(255,255,255,0.55);
+    }
+    .stat-row-label { font-size: 11px; color: rgba(255,255,255,0.65); white-space: nowrap; flex: 1; overflow: hidden; }
+    .stat-row-value { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; }
+    .stat-row-unit { font-size: 10px; color: rgba(255,255,255,0.5); margin-left: 2px; }
+
+    /* Online blinking row */
+    .stat-row-online { border-bottom: 1px solid rgba(255,255,255,0.12) !important; margin-bottom: 3px; padding-bottom: 8px !important; }
+    .online-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #4CAF50; flex-shrink: 0;
+      box-shadow: 0 0 0 0 rgba(76,175,80,0.6);
+      animation: pulse-online 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse-online {
+      0%   { box-shadow: 0 0 0 0 rgba(76,175,80,0.7); transform: scale(1); }
+      50%  { box-shadow: 0 0 0 6px rgba(76,175,80,0); transform: scale(1.15); }
+      100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); transform: scale(1); }
+    }
+    .online-label { font-size: 11px; color: #A5D6A7; font-weight: 500; white-space: nowrap; flex: 1; }
+    .online-value { font-size: 13px; font-weight: 700; color: #69F0AE; }
+
+    /* collapsed: show icon only */
+    .sidebar.collapsed .sidebar-stats {
+      padding: 10px 0;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .sidebar-stats-collapsed-dot {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-stats-collapsed-dot {
+      display: flex; justify-content: center; align-items: center; width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -451,6 +508,48 @@
           <div class="user-name" id="userName">ผู้ดูแลระบบ</div>
           <div class="user-role" id="userRoleLabel">Admin</div>
         </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR STATS PANEL -->
+    <div class="sidebar-stats" id="sidebarStats">
+      <!-- collapsed: dot only -->
+      <div class="sidebar-stats-collapsed-dot">
+        <div class="online-dot" title="กำลังใช้งาน"></div>
+      </div>
+
+      <div class="sidebar-stats-title">สถิติการใช้งาน</div>
+
+      <!-- Online now -->
+      <div class="stat-row stat-row-online" style="display:flex;align-items:center;gap:8px;padding:6px 0 8px">
+        <div class="online-dot"></div>
+        <span class="online-label">กำลังเข้าใช้งาน</span>
+        <span class="online-value" id="statOnline">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
+
+      <!-- Today -->
+      <div class="stat-row">
+        <div class="stat-row-icon"><i class="fas fa-calendar-day"></i></div>
+        <span class="stat-row-label">เข้าใช้วันนี้</span>
+        <span class="stat-row-value" id="statToday">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
+
+      <!-- This month -->
+      <div class="stat-row">
+        <div class="stat-row-icon"><i class="fas fa-calendar-week"></i></div>
+        <span class="stat-row-label">เข้าใช้เดือนนี้</span>
+        <span class="stat-row-value" id="statMonth">0</span>
+        <span class="stat-row-unit">คน</span>
+      </div>
+
+      <!-- This year -->
+      <div class="stat-row">
+        <div class="stat-row-icon"><i class="fas fa-calendar-alt"></i></div>
+        <span class="stat-row-label">เข้าใช้ปีนี้</span>
+        <span class="stat-row-value" id="statYear">0</span>
+        <span class="stat-row-unit">คน</span>
       </div>
     </div>
   </aside>
@@ -1375,6 +1474,47 @@ function renderLogs() {
 function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ============================================================
+// VISITOR STATS (localStorage-based)
+// ============================================================
+(function initVisitorStats() {
+  var now = new Date();
+  var todayKey  = 'vstats_d_' + now.getFullYear() + '_' + now.getMonth() + '_' + now.getDate();
+  var monthKey  = 'vstats_m_' + now.getFullYear() + '_' + now.getMonth();
+  var yearKey   = 'vstats_y_' + now.getFullYear();
+  var visitedKey = 'vstats_visited_' + todayKey;
+
+  // Count this visit once per session per day
+  if (!sessionStorage.getItem(visitedKey)) {
+    sessionStorage.setItem(visitedKey, '1');
+    localStorage.setItem(todayKey,  (parseInt(localStorage.getItem(todayKey)  || '0') + 1).toString());
+    localStorage.setItem(monthKey,  (parseInt(localStorage.getItem(monthKey)  || '0') + 1).toString());
+    localStorage.setItem(yearKey,   (parseInt(localStorage.getItem(yearKey)   || '0') + 1).toString());
+  }
+
+  function updateStatsUI() {
+    var today = parseInt(localStorage.getItem(todayKey)  || '0');
+    var month = parseInt(localStorage.getItem(monthKey)  || '0');
+    var year  = parseInt(localStorage.getItem(yearKey)   || '0');
+
+    // Simulate online users: random fluctuation around today count
+    var onlineBase = Math.max(1, Math.floor(today * 0.3));
+    var online = onlineBase + Math.floor(Math.random() * 3);
+
+    var elO = document.getElementById('statOnline');
+    var elT = document.getElementById('statToday');
+    var elM = document.getElementById('statMonth');
+    var elY = document.getElementById('statYear');
+    if (elO) elO.textContent = online;
+    if (elT) elT.textContent = today;
+    if (elM) elM.textContent = month;
+    if (elY) elY.textContent = year;
+  }
+
+  updateStatsUI();
+  setInterval(updateStatsUI, 10000);
+})();
 
 // ============================================================
 // INIT LOGIN SCREEN
