@@ -1518,14 +1518,17 @@ initApp();
 // ============================================================
 // FIREBASE FIRESTORE CONNECTION & LIVE RECORD
 // ============================================================
-// 1. นำเข้าเครื่องมือ Firebase ผ่านรูปแบบ Module ที่รองรับในปัจจุบัน
+// ============================================================
+// FIREBASE REALTIME DATABASE CONNECTION (FREE PLAN)
+// ============================================================
+// เปลี่ยนมาดึงเครื่องมือฝั่ง Realtime Database แทน
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// 2. รหัสผ่านเชื่อมต่อโครงข่ายคลาวด์เฉพาะของโรงเรียนท่าน
 const firebaseConfig = {
   apiKey: "AIzaSyDqqmrw1JtvQswTJnqrD2kmvJomxKumM8U",
   authDomain: "school-system-9f886.firebaseapp.com",
+  databaseURL: "https://school-system-9f886-default-rtdb.asia-southeast1.firebasedatabase.app", // เพิ่มลิงก์ตู้ข้อมูลตรงนี้
   projectId: "school-system-9f886",
   storageBucket: "school-system-9f886.firebasestorage.app",
   messagingSenderId: "84817223509",
@@ -1533,40 +1536,38 @@ const firebaseConfig = {
   measurementId: "G-XFMYE011W6"
 };
 
-// 3. เปิดการเชื่อมต่อฐานข้อมูล
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getDatabase(app); // เปลี่ยนมาใช้ระบบดึงข้อมูลแบบ Database
 
-// 4. ฟังก์ชันหลักสำหรับบันทึกข้อมูล (มีระบบดักจับ Event ป้องกันหน้าจอหายตามที่เราคุยกัน)
 window.saveData = async function(event) {
-  // ดักจับและหยุดระบบส่งฟอร์มปกติของเบราว์เซอร์ เพื่อไม่ให้หน้าจอ Refresh ตัวเอง ข้อมูลจึงไม่หาย
   if (event) event.preventDefault();
 
   try {
-    // สั่งยิงข้อมูลขึ้น Cloud ไปเก็บไว้ที่ตู้ข้อมูลชื่อ "school_records"
-    const docRef = await addDoc(collection(db, "school_records"), {
+    // สั่งสร้างแฟ้มข้อมูลใหม่ในตู้ชื่อ school_records
+    const recordsRef = ref(db, 'school_records');
+    const newRecordRef = push(recordsRef);
+    
+    await set(newRecordRef, {
       schoolName: DB.settings.schoolName,
       director: DB.settings.director,
-      action: "ทดสอบการเชื่อมต่อระบบหลังบ้านโรงเรียน",
-      status: "เชื่อมต่อฐานข้อมูลถาวรสำเร็จ",
-      timestamp: new Date().toISOString()
+      action: "ทดสอบการเชื่อมต่อระบบ Realtime Database",
+      status: "เชื่อมต่อฐานข้อมูลฟรีสำเร็จ 100%",
+      timestamp: new Date().toLocaleString('th-TH')
     });
 
-    // ใช้ระบบแจ้งเตือนแบบกล่องสวยงาม (SweetAlert2) ที่มีอยู่ในระบบเดิมของท่านอยู่แล้ว
     Swal.fire({
       icon: 'success',
       title: 'บันทึกสำเร็จ!',
-      text: 'ข้อมูลถูกจัดเก็บลงบนคลาวด์ Firebase เรียบร้อยแล้ว',
+      text: 'ข้อมูลถูกส่งเข้าคลัง Realtime Database ฟรีเรียบร้อยแล้ว',
       confirmButtonColor: '#1565C0'
     });
 
-    console.log("บันทึกสำเร็จในคลังข้อมูล ID:", docRef.id);
   } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase:", error);
+    console.error("เกิดข้อผิดพลาด:", error);
     Swal.fire({
       icon: 'error',
       title: 'เกิดข้อผิดพลาด',
-      text: 'ไม่สามารถส่งข้อมูลไปคลาวด์ได้: ' + error.message,
+      text: 'ข้อผิดพลาด: ' + error.message,
       confirmButtonColor: '#C62828'
     });
   }
